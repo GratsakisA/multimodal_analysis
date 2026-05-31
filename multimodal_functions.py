@@ -23,71 +23,370 @@ schemata = {
 for schema, value in schemata.items():
     globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
     
+# ---------------------------------------------------------------------------------------------------------
 
-def control_view(rp_list):
+def get_condition_distribution(
+    animal_id,
+    from_session,
+    to_session,
+    stim,
+    exp,
+    manual_exclusion_sessions,
+):
+    restr = exp.Session() & {'animal_id': animal_id}
+    valid_sessions = (restr - exp.Session.Excluded).fetch('session')
     
-    """
-    Displays a styled control table for experimental sessions filtered by setup.
+    sessions = []
+    
+    auditory_pct = []
+    visual_pct = []
+    multimodal_pct = []
+    multimodal_215_pct = []
+    visual_215_pct = []
+    
+    
+    for session in range(from_session, to_session + 1):
+        if session not in valid_sessions:
+            continue
+        
+        if session in manual_exclusion_sessions:
+            continue
+    
+        key = {'animal_id': animal_id, "session":session}
+    
+        # auditory conditions = obj_mag = 0 & tone_volume > 0 ---------------------------------------------------------------
+        auditory_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset * 
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & 'state in ("Reward", "Punish")'
+            # & 'state in ("Abort")'
+        ).fetch(format='frame').reset_index()
+        
+        auditory_stateonset['obj_mag'] = pd.to_numeric(auditory_stateonset['obj_mag'], errors='coerce')
+        auditory_stateonset = auditory_stateonset[auditory_stateonset['obj_mag'] == 0]
+    
+        # visual conditions = obj_mag > 0 & tone_volume = 0 ---------------------------------------------------------------
+        visual_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset *
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume = 0'
+            & key
+            & 'obj_id != 215'
+            & 'state in ("Reward", "Punish")'
+            # & 'state in ("Abort")'
+        ).fetch(format='frame').reset_index()
+        
+        visual_stateonset['obj_mag'] = pd.to_numeric(visual_stateonset['obj_mag'], errors='coerce')
+        visual_stateonset = visual_stateonset[visual_stateonset['obj_mag'] > 0]
+    
+        # multimodal conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
+        multi_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset *
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & 'obj_id != 215'
+            & 'state in ("Reward", "Punish")'
+            # & 'state in ("Abort")'
+        ).fetch(format='frame').reset_index()
+        
+        multi_stateonset['obj_mag'] = pd.to_numeric(multi_stateonset['obj_mag'], errors='coerce')
+        multi_stateonset = multi_stateonset[multi_stateonset['obj_mag'] > 0]
+    
+        # multimodal 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
+        multi215_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset * 
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & 'obj_id=215'
+            & 'state in ("Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        multi215_stateonset['obj_mag'] = pd.to_numeric(multi215_stateonset['obj_mag'], errors='coerce')
+        multi215_stateonset = multi215_stateonset[multi215_stateonset['obj_mag'] > 0]
+    
+        # visual 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
+        visual215_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset * 
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume = 0'
+            & key
+            & 'obj_id=215'
+            & 'state in ("Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        visual215_stateonset['obj_mag'] = pd.to_numeric(visual215_stateonset['obj_mag'], errors='coerce')
+        visual215_stateonset = visual215_stateonset[visual215_stateonset['obj_mag'] > 0]
+    
+    
+        # ---- replace with real per-session computation ----
+        auditory_trials = len(auditory_stateonset)
+        visual_trials = len(visual_stateonset)
+        multimodal_trials = len(multi_stateonset)
+        visual215_trials = len(visual215_stateonset)
+        multi215_trials = len(multi215_stateonset)
+    
+        sizes = np.array([auditory_trials, visual_trials, multimodal_trials, multi215_trials, visual215_trials])
+        total = sizes.sum()
+    
+        if total == 0:
+            continue
+    
+        sessions.append(session)
+        auditory_pct.append(sizes[0] / total * 100)
+        visual_pct.append(sizes[1] / total * 100)
+        multimodal_pct.append(sizes[2] / total * 100)
+        multimodal_215_pct.append(sizes[3] / total * 100)
+        visual_215_pct.append(sizes[4] / total * 100)
+    
+    # convert to numpy arrays (IMPORTANT for alignment)
+    auditory_pct = np.array(auditory_pct)
+    visual_pct = np.array(visual_pct)
+    multimodal_pct = np.array(multimodal_pct)
+    multimodal_215_pct = np.array(multimodal_215_pct)
+    visual_215_pct = np.array(visual_215_pct)
+    
+    y = np.arange(len(sessions))  # <-- THIS fixes alignment
+    
+    plt.figure(figsize=(10, max(4, len(sessions) * 0.3)))
+    
+    plt.barh(y, auditory_pct, label='Auditory')
+    plt.barh(y, visual_pct, left=auditory_pct, label='Visual')
+    plt.barh(y, multimodal_pct, left=auditory_pct + visual_pct, label='Multimodal')
+    plt.barh(y, multimodal_215_pct, left=auditory_pct + visual_pct + multimodal_pct, label='Multimodal_50/50')
+    plt.barh(y, visual_215_pct,left=auditory_pct + visual_pct + multimodal_pct + multimodal_215_pct, label='Visual_50/50')
+    
+    
+    plt.yticks(y, sessions)   # <-- correct session labels aligned to bars
+    
+    plt.xticks(range(0, 101, 5))
+    plt.xlabel('Percentage', fontsize=12)
+    plt.ylabel('Session ID', fontsize=12)
+    plt.tick_params(axis='both', labelsize=12)
+    plt.title(f'Trial Modality Distribution (Animal {animal_id}) - valids Only', fontsize=12)
+    plt.legend(fontsize=12)
+    plt.grid(alpha=0.3)
+    
+    plt.show()
 
-    Functionality:
-    --------------
-    - Loads session/control data from `experiment.Control()`.
-    - Formats time columns (`start_time`, `stop_time`) to show only time (HH:MM:SS).
-    - Filters the dataset to include only the setups specified in `rp_list`.
-    - Builds a styled pandas DataFrame:
-        * Highlights session status using `highlight_status`
-        * Formats numeric columns (e.g., total_liquid)
-        * Hides the index for cleaner display
-    - Displays the resulting styled table.
 
-    Inputs:
-    -------
-    rp_list : list
-        List of setup identifiers used to filter the control dataset.
-        Only rows whose 'setup' value is in this list will be shown.
-
-    Output:
-    -------
-    None
-        The function does not return a value.
-        It renders a styled pandas DataFrame directly to the output (e.g., Jupyter notebook display).
-
-    Notes:
-    ------
-    - Requires a global or imported `experiment.Control()` function.
-    - Uses pandas styling; intended for interactive environments (Jupyter, Lab).
-    - Depends on `highlight_status` function for row coloring.
-    """
-
-    # -----------------------
-    # Load the data
-    # -----------------------
-    df = pd.DataFrame(experiment.Control())
-
-    # Format time columns
-    df['start_time'] = df['start_time'].apply(lambda x: str(x).split()[-1] if pd.notnull(x) else '')
-    df['stop_time'] = df['stop_time'].apply(lambda x: str(x).split()[-1] if pd.notnull(x) else '')
-
-    # -----------------------
-    # Filter setups
-    # -----------------------
-    filtered_df = df[df['setup'].isin(rp_list)]
-
-    # -----------------------
-    # Build styled table
-    # -----------------------
-    table = (
-        filtered_df[[
-            'setup', 'status', 'animal_id', 'task_idx', 'session', 'trials',
-            'total_liquid', 'state', 'difficulty', 'start_time', 'stop_time', 'notes', 'last_ping'
-        ]]
-        .style
-        .apply(highlight_status, axis=1)
-        .format({'total_liquid': "{:.0f}"})
-        .hide(axis="index")
+def scatter_plot_modalities(
+    animal_id,
+    from_session,
+    to_session,
+    stim,
+    exp,
+):
+    restr = exp.Session() & {'animal_id': animal_id}
+    valid_sessions = (restr - exp.Session.Excluded).fetch('session')
+    
+    perf_per_condition = []
+    skipped_sessions = []
+    
+    for session in range(from_session, to_session + 1):
+        if session not in valid_sessions:
+            continue
+    
+        key = {'animal_id': animal_id, "session":session}
+    
+        # auditory conditions = obj_mag = 0 & tone_volume > 0
+        auditory_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset * 
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        auditory_stateonset['obj_mag'] = pd.to_numeric(auditory_stateonset['obj_mag'], errors='coerce')
+        auditory_stateonset = auditory_stateonset[auditory_stateonset['obj_mag'] == 0]
+    
+        # visual conditions = obj_mag > 0 & tone_volume = 0
+        visual_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset * 
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume = 0'
+            & key
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        visual_stateonset['obj_mag'] = pd.to_numeric(visual_stateonset['obj_mag'], errors='coerce')
+        visual_stateonset = visual_stateonset[visual_stateonset['obj_mag'] > 0]
+    
+        # multimodal conditions = obj_mag > 0 & tone_volume > 0
+        multi_stateonset = (
+            stim.StimCondition.Trial * 
+            (stim.Panda.Object).proj('obj_mag') * 
+            exp.Trial.StateOnset * 
+            (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        multi_stateonset['obj_mag'] = pd.to_numeric(multi_stateonset['obj_mag'], errors='coerce')
+        multi_stateonset = multi_stateonset[multi_stateonset['obj_mag'] > 0]
+    
+        unimodal_stateonset = (
+            stim.StimCondition.Trial *
+            (stim.Panda.Object).proj('obj_mag') *
+            exp.Trial.StateOnset *
+            (stim.Tones).proj('tone_volume')
+            & key
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        unimodal_stateonset['obj_mag'] = pd.to_numeric(
+            unimodal_stateonset['obj_mag'],
+            errors='coerce'
+        )
+        
+        unimodal_stateonset['tone_volume'] = pd.to_numeric(
+            unimodal_stateonset['tone_volume'],
+            errors='coerce'
+        )
+        
+        # apply the OR condition in pandas
+        unimodal_stateonset = unimodal_stateonset[
+            (
+                (unimodal_stateonset['obj_mag'] > 0) &
+                (unimodal_stateonset['tone_volume'] == 0)
+            )
+            |
+            (
+                (unimodal_stateonset['obj_mag'] == 0) &
+                (unimodal_stateonset['tone_volume'] > 0)
+            )
+        ]
+    
+         # Skip sessions missing ANY modality
+        if (
+            len(auditory_stateonset) == 0 or
+            len(visual_stateonset) == 0 or
+            len(multi_stateonset) == 0
+        ):
+            skipped_sessions.append(session)
+            continue
+    
+        # Calculate the performance in each condition
+        visual_perf = round((visual_stateonset['state'] == 'Reward').mean(), 2)
+        auditory_perf = round((auditory_stateonset['state'] == 'Reward').mean(), 2)
+        multi_perf = round((multi_stateonset['state'] == 'Reward').mean(), 2)
+        uni_perf = round((unimodal_stateonset['state'] == 'Reward').mean(), 2)
+    
+        perf_per_condition.append({
+            'session': session,
+            'auditory_perf': auditory_perf,
+            'visual_perf': visual_perf,
+            'multi_perf': multi_perf,
+            'uni_perf': uni_perf,
+        })
+        
+    perf_per_condition = pd.DataFrame(perf_per_condition)
+    
+    perf_per_condition['session'] = perf_per_condition['session'].astype(str)
+    
+    # plotting =======================
+    fig, axes = plt.subplots(1, 4, figsize=(15, 5), sharex=True, sharey=False)
+    
+    # Auditory vs Visual
+    sns.scatterplot(
+        data=perf_per_condition,
+        x='auditory_perf',
+        y='visual_perf',
+        ax=axes[0],
+        hue='session',
+        s=40
     )
+    axes[0].set_title('Auditory vs Visual', fontsize=12)
+    axes[0].set_ylabel('visual_perf', fontsize=12)
+    axes[0].set_xlabel('auditory_perf', fontsize=12)
+    axes[0].tick_params(axis='both', labelsize=12)
+    axes[0].set_xlim(0, 1)
+    axes[0].set_ylim(0, 1)
+    axes[0].axline((0, 0), slope=1, linestyle='--', color='gray')
+    
+    # Visual vs Multimodal
+    sns.scatterplot(
+        data=perf_per_condition,
+        x='visual_perf',
+        y='multi_perf',
+        ax=axes[1],
+        hue='session',
+        s=40,
+        legend=False
+    )
+    axes[1].set_title('Visual vs Multimodal', fontsize=12)
+    axes[1].set_ylabel('multimodals_perf', fontsize=12)
+    axes[1].set_xlabel('visual_perf', fontsize=12)
+    axes[1].tick_params(axis='both', labelsize=12)
+    axes[1].set_xlim(0, 1)
+    axes[1].set_ylim(0, 1)
+    axes[1].axline((0, 0), slope=1, linestyle='--', color='gray')
+    
+    # Auditory vs Multimodal
+    sns.scatterplot(
+        data=perf_per_condition,
+        x='auditory_perf',
+        y='multi_perf',
+        ax=axes[2],
+        hue='session',
+        s=40,
+        legend=False
+    )
+    axes[2].set_title('Auditory vs Multimodal', fontsize=12)
+    axes[2].set_ylabel('multimodals_perf', fontsize=12)
+    axes[2].set_xlabel('auditory_perf', fontsize=12)
+    axes[2].tick_params(axis='both', labelsize=12)
+    axes[2].set_xlim(0, 1)
+    axes[2].set_ylim(0, 1)
+    axes[2].axline((0, 0), slope=1, linestyle='--', color='gray')
+    
+    # Unimodals vs Multimodal
+    sns.scatterplot(
+        data=perf_per_condition,
+        x='uni_perf',
+        y='multi_perf',
+        ax=axes[3],
+        hue='session',
+        s=40,
+        legend=False
+    )
+    axes[3].set_title('Unimodals vs Multimodals', fontsize=12)
+    axes[3].set_ylabel('multimodals_perf', fontsize=12)
+    axes[3].set_xlabel('unimodals_perf', fontsize=12)
+    axes[3].tick_params(axis='both', labelsize=12)
+    axes[3].set_xlim(0, 1)
+    axes[3].set_ylim(0, 1)
+    axes[3].axline((0, 0), slope=1, linestyle='--', color='gray')
+    
+    plt.suptitle(f'Performance Across Auditory, Visual, and Multimodal Conditions (Animal {animal_id})')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    
+    print("Skipped sessions (missing one or more modalities):", skipped_sessions)
+    display(perf_per_condition)
 
-    display(table)
+
 
 
 
@@ -343,7 +642,7 @@ def _process_multimodal_object(
             continue
         
         multimodal_trials = pd.DataFrame((
-            * exp.Condition.MatchPort
+            exp.Condition.MatchPort
             & key_session
             & obj_query
             & difficulty_filter
