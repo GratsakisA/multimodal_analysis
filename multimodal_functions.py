@@ -32,7 +32,16 @@ def get_condition_distribution(
     stim,
     exp,
     manual_exclusion_sessions,
+    difficulties,
 ):
+    difficulties = _get_difficulties({'difficulties': difficulties})
+    
+    if difficulties is None:
+        return
+
+    difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+        
     restr = exp.Session() & {'animal_id': animal_id}
     valid_sessions = (restr - exp.Session.Excluded).fetch('session')
     
@@ -43,7 +52,7 @@ def get_condition_distribution(
     multimodal_pct = []
     multimodal_215_pct = []
     visual_215_pct = []
-    
+
     
     for session in range(from_session, to_session + 1):
         if session not in valid_sessions:
@@ -56,10 +65,12 @@ def get_condition_distribution(
     
         # auditory conditions = obj_mag = 0 & tone_volume > 0 ---------------------------------------------------------------
         auditory_stateonset = (
-            stim.StimCondition.Trial * 
-            (stim.Panda.Object).proj('obj_mag') * 
-            exp.Trial.StateOnset * 
-            (stim.Tones).proj('tone_volume') 
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
+            & difficulty_filter
             & 'tone_volume > 0'
             & key
             & 'state in ("Reward", "Punish")'
@@ -70,12 +81,14 @@ def get_condition_distribution(
     
         # visual conditions = obj_mag > 0 & tone_volume = 0 ---------------------------------------------------------------
         visual_stateonset = (
-            stim.StimCondition.Trial * 
-            (stim.Panda.Object).proj('obj_mag') * 
-            exp.Trial.StateOnset *
-            (stim.Tones).proj('tone_volume') 
+            stim.StimCondition.Trial  
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
             & 'tone_volume = 0'
             & key
+            & difficulty_filter
             & 'obj_id != 215'
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
@@ -85,12 +98,14 @@ def get_condition_distribution(
     
         # multimodal conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
         multi_stateonset = (
-            stim.StimCondition.Trial * 
-            (stim.Panda.Object).proj('obj_mag') * 
-            exp.Trial.StateOnset *
-            (stim.Tones).proj('tone_volume') 
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
             & 'tone_volume > 0'
             & key
+            & difficulty_filter
             & 'obj_id != 215'
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
@@ -100,12 +115,14 @@ def get_condition_distribution(
     
         # multimodal 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
         multi215_stateonset = (
-            stim.StimCondition.Trial * 
-            (stim.Panda.Object).proj('obj_mag') * 
-            exp.Trial.StateOnset * 
-            (stim.Tones).proj('tone_volume') 
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag')  
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
             & 'tone_volume > 0'
             & key
+            & difficulty_filter
             & 'obj_id=215'
             & 'state in ("Punish")'
         ).fetch(format='frame').reset_index()
@@ -115,12 +132,14 @@ def get_condition_distribution(
     
         # visual 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
         visual215_stateonset = (
-            stim.StimCondition.Trial * 
-            (stim.Panda.Object).proj('obj_mag') * 
-            exp.Trial.StateOnset * 
-            (stim.Tones).proj('tone_volume') 
+            stim.StimCondition.Trial  
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
             & 'tone_volume = 0'
             & key
+            & difficulty_filter
             & 'obj_id=215'
             & 'state in ("Punish")'
         ).fetch(format='frame').reset_index()
@@ -148,8 +167,12 @@ def get_condition_distribution(
         multimodal_pct.append(sizes[2] / total * 100)
         multimodal_215_pct.append(sizes[3] / total * 100)
         visual_215_pct.append(sizes[4] / total * 100)
+
+    if not sessions:
+        print("🚫 No valid data for plotting")
+        return
     
-    # convert to numpy arrays (IMPORTANT for alignment)
+    # convert to numpy arrays (for alignment)
     auditory_pct = np.array(auditory_pct)
     visual_pct = np.array(visual_pct)
     multimodal_pct = np.array(multimodal_pct)
@@ -160,11 +183,28 @@ def get_condition_distribution(
     
     plt.figure(figsize=(10, max(4, len(sessions) * 0.3)))
     
-    plt.barh(y, auditory_pct, label='Auditory')
-    plt.barh(y, visual_pct, left=auditory_pct, label='Visual')
-    plt.barh(y, multimodal_pct, left=auditory_pct + visual_pct, label='Multimodal')
-    plt.barh(y, multimodal_215_pct, left=auditory_pct + visual_pct + multimodal_pct, label='Multimodal_50/50')
-    plt.barh(y, visual_215_pct,left=auditory_pct + visual_pct + multimodal_pct + multimodal_215_pct, label='Visual_50/50')
+    condition_series = [
+        ('Auditory', auditory_pct),
+        ('Visual', visual_pct),
+        ('Multimodal', multimodal_pct),
+        ('Multimodal_50/50', multimodal_215_pct),
+        ('Visual_50/50', visual_215_pct),
+    ]
+
+    left = np.zeros(len(sessions))
+
+    for label, values in condition_series:
+        if values.sum() == 0:
+            continue
+
+        plt.barh(
+            y,
+            values,
+            left=left,
+            label=label
+        )
+
+        left = left + values
     
     
     plt.yticks(y, sessions)   
@@ -198,14 +238,22 @@ def get_condition_distribution(
     plt.show()
 
 
-def scatter_plot_modalities(
+def get_scatter_plot_modalities(
     animal_id,
     from_session,
     to_session,
     stim,
     exp,
-    manual_exclusion_sessions
+    manual_exclusion_sessions,
+    difficulties,
 ):
+    difficulties = _get_difficulties({'difficulties': difficulties})
+    if difficulties is None:
+        return
+
+    difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+    
     restr = exp.Session() & {'animal_id': animal_id}
     
     valid_sessions = (
@@ -229,9 +277,11 @@ def scatter_plot_modalities(
             stim.StimCondition.Trial * 
             (stim.Panda.Object).proj('obj_mag') * 
             exp.Trial.StateOnset * 
+            difficulty *
             (stim.Tones).proj('tone_volume') 
             & 'tone_volume > 0'
             & key
+            & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -243,9 +293,11 @@ def scatter_plot_modalities(
             stim.StimCondition.Trial * 
             (stim.Panda.Object).proj('obj_mag') * 
             exp.Trial.StateOnset * 
+            difficulty *
             (stim.Tones).proj('tone_volume') 
             & 'tone_volume = 0'
             & key
+            & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -257,9 +309,11 @@ def scatter_plot_modalities(
             stim.StimCondition.Trial * 
             (stim.Panda.Object).proj('obj_mag') * 
             exp.Trial.StateOnset * 
+            difficulty *
             (stim.Tones).proj('tone_volume') 
             & 'tone_volume > 0'
             & key
+            & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -270,8 +324,10 @@ def scatter_plot_modalities(
             stim.StimCondition.Trial *
             (stim.Panda.Object).proj('obj_mag') *
             exp.Trial.StateOnset *
+            difficulty *
             (stim.Tones).proj('tone_volume')
             & key
+            & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -298,7 +354,7 @@ def scatter_plot_modalities(
             )
         ]
     
-         # Skip sessions missing ANY modality
+        # Skip sessions missing ANY modality
         if (
             len(auditory_stateonset) == 0 or
             len(visual_stateonset) == 0 or
@@ -322,7 +378,11 @@ def scatter_plot_modalities(
         })
         
     perf_per_condition = pd.DataFrame(perf_per_condition)
-    
+
+    if perf_per_condition.empty:
+        print('🚫 No valid data for plotting')
+        return
+            
     perf_per_condition['session'] = perf_per_condition['session'].astype(str)
     
     # plotting =======================
@@ -416,12 +476,25 @@ OBJECT_ALIASES = {211: [211, 1], 219: [219, 2]}
 
 # ---------------- INTERNAL FUNCTIONS ----------------
 def _validate_key(key):
-    required = ['animal_id', 'sessions', 'difficulties']
+    required = ['animal_id', 'sessions']
     for r in required:
         if r not in key:
             raise KeyError(f"Missing required key: '{r}'")
-    # if 'sessions' not in key:
-    #     raise KeyError("Provide either 'sessions' or 'dates'")
+
+def _get_difficulties(key):
+    difficulties = key.get('difficulties')
+
+    if difficulties is None or (
+        hasattr(difficulties, '__len__') and len(difficulties) == 0
+    ):
+        print("complete the difficulty level")
+        return None
+
+    if isinstance(difficulties, (int, float)):
+        return [difficulties]
+
+    return difficulties
+
 
 def _fetch_sessions(animal_id, session_range):
     from_s, to_s = session_range
@@ -503,7 +576,6 @@ def _process_object(animal_id, obj_id, sessions, difficulties, excluded_sessions
             {
                 'animal_id': animal_id,
                 'session': session,
-                # 'date': session_tmst,
                 'date': session_date,
                 'session_trials': total_trials,
                 'valid_obj_trials': valid,
@@ -523,10 +595,11 @@ def fetch_visual_data(key):
     _validate_key(key)
     
     animal_id = key['animal_id']
+
+    difficulties = _get_difficulties(key)
+    if difficulties is None:
+        return {}
     
-    difficulties = key['difficulties']
-    
-    # object_ids = key['object_ids']
     object_ids = key.get('object_ids', DEFAULT_OBJECT_IDS)
     
     excluded_sessions = key.get(
@@ -561,6 +634,10 @@ def get_visual_performance_summary(key):
     Fetch and display object-wise DataFrames in Jupyter.
     """
     object_dfs = fetch_visual_data(key)
+
+    if not object_dfs:
+        print("🚫 No valid visual data to analysis.")
+        return object_dfs
     
     display(HTML("<h2><b>Unimodal visual trials</b></h2>"))    
     
@@ -606,7 +683,7 @@ def plot_visual_performance_per_object(
             )
     if not row_data:
         print(
-            "🚫 No valid data to plot."
+            "🚫 No valid visual data to plot."
         )
         return
 
@@ -797,6 +874,7 @@ def _process_multimodal_object(
     rows = []
 
     difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
 
     for session in sessions:
 
@@ -818,6 +896,7 @@ def _process_multimodal_object(
                 stim.StimCondition.Trial
                 * stim.Panda.Object.proj('obj_mag')
                 * exp.Trial.StateOnset
+                * difficulty
                 * stim.Tones.proj('tone_volume')
                 & key_session
                 & obj_query
@@ -886,8 +965,13 @@ def fetch_multimodal_data(key):
     _validate_key(key)
 
     animal_id = key['animal_id']
-    difficulties = key['difficulties']
-    # object_ids = key['object_ids']
+
+    difficulties = _get_difficulties(key)
+    if difficulties is None:
+        return {}
+
+    
+
     object_ids = key.get('object_ids', DEFAULT_OBJECT_IDS)
 
     excluded_sessions = key.get(
@@ -920,6 +1004,10 @@ def fetch_multimodal_data(key):
 def get_multimodal_performance_summary(key):
 
     object_dfs = fetch_multimodal_data(key)
+
+    if not object_dfs:
+        print("🚫 No valid multimodal data for analysis")
+        return object_dfs
 
     display(HTML("<h2><b>Multimodal trials</b></h2>"))
 
@@ -963,7 +1051,7 @@ def plot_multimodal_performance_per_object(
             )
 
     if not row_data:
-        print("🚫 No valid multimodal data found.")
+        print("🚫 No valid multimodal data to plot")
         return
 
     row_data = pd.concat(row_data, ignore_index=True)
@@ -1159,13 +1247,18 @@ def plot_multimodal_performance_per_object(
 def compute_auditory_performance_summary(key):
     animal_id = key['animal_id']
     from_session, to_session = key['sessions']
-    difficulty = key.get('difficulties')
+    
+    difficulties = _get_difficulties(key)
+    if difficulties is None:
+        return pd.DataFrame(), pd.DataFrame()
+    
     manual_exclusion_sessions = key.get('excluded_sessions', [])
+    
+    difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
     
     restr = exp.Session() & {'animal_id': animal_id}
     valid_sessions = (restr - exp.Session.Excluded).fetch('session')
-    
-    
     
     rows_pulse0 = []
     rows_pulse100 = []
@@ -1173,6 +1266,9 @@ def compute_auditory_performance_summary(key):
     for session in range(from_session,to_session + 1):
     
         if session not in valid_sessions:
+                continue
+
+        if session in manual_exclusion_sessions:
                 continue
     
         key_session = {'animal_id': animal_id, 'session': session}
@@ -1184,9 +1280,11 @@ def compute_auditory_performance_summary(key):
             stim.StimCondition.Trial *
             (stim.Panda.Object).proj('obj_mag') *
             exp.Trial.StateOnset *
+            difficulty *
             (stim.Tones).proj('tone_volume', 'tone_pulse_freq')
             & 'tone_volume > 0'
             & key_session
+            & difficulty_filter
             & 'state in ("Reward", "Punish", "Abort")'
         ).fetch(format='frame').reset_index()
     
@@ -1197,6 +1295,9 @@ def compute_auditory_performance_summary(key):
         pulse100 = auditory_trials[auditory_trials['tone_pulse_freq'] == 100]
     
         for df_trials, rows in [(pulse0, rows_pulse0), (pulse100, rows_pulse100)]:
+
+            if df_trials.empty:
+                continue
     
             reward = (df_trials['state'] == 'Reward').sum()
             punish = (df_trials['state'] == 'Punish').sum()
@@ -1230,6 +1331,12 @@ def get_auditory_performance_summary(
 ):
   
     pulse0_df, pulse100_df = compute_auditory_performance_summary(key)
+
+    if pulse0_df.empty and pulse100_df.empty:
+        print("🚫 No valid auditory data for analysis")
+        return pulse0_df, pulse100_df
+
+    display(HTML("<h2><b>Unimodal auditory trials</b></h2>"))
     
     if pulse_freq == 'all':
         display(HTML('<b><h4>Pulsed tone</b> (<i>tone_pulse_freq = 100 Hz</i>)</h4>'))
@@ -1261,6 +1368,10 @@ def plot_auditory_performance_per_object(
     
     # get data internally
     pulse0_df, pulse100_df = compute_auditory_performance_summary(key)
+
+    if pulse0_df.empty and pulse100_df.empty:
+        print("🚫 No valid auditory data to plot")
+        return
 
     df_all = pd.concat(
         [pulse0_df, pulse100_df],
