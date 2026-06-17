@@ -237,7 +237,6 @@ def get_condition_distribution(
     
     plt.show()
 
-
 def get_scatter_plot_modalities(
     animal_id,
     from_session,
@@ -376,8 +375,11 @@ def get_scatter_plot_modalities(
             'multi_perf': multi_perf,
             'uni_perf': uni_perf,
         })
+
+        
         
     perf_per_condition = pd.DataFrame(perf_per_condition)
+
 
     if perf_per_condition.empty:
         print('🚫 No valid data for plotting')
@@ -402,7 +404,7 @@ def get_scatter_plot_modalities(
     axes[0].set_xlabel('auditory_perf', fontsize=12)
     axes[0].tick_params(axis='both', labelsize=12)
     axes[0].set_xlim(0, 1)
-    axes[0].set_ylim(0, 1)
+    axes[0].set_ylim(0, 1.1)
     axes[0].axline((0, 0), slope=1, linestyle='--', color='gray')
     
     # Visual vs Multimodal
@@ -438,7 +440,7 @@ def get_scatter_plot_modalities(
     axes[2].set_xlabel('auditory_perf', fontsize=12)
     axes[2].tick_params(axis='both', labelsize=12)
     axes[2].set_xlim(0, 1)
-    axes[2].set_ylim(0, 1)
+    axes[2].set_ylim(0, 1.1)
     axes[2].axline((0, 0), slope=1, linestyle='--', color='gray')
     
     # Unimodals vs Multimodal
@@ -456,7 +458,7 @@ def get_scatter_plot_modalities(
     axes[3].set_xlabel('unimodals_perf', fontsize=12)
     axes[3].tick_params(axis='both', labelsize=12)
     axes[3].set_xlim(0, 1)
-    axes[3].set_ylim(0, 1)
+    axes[3].set_ylim(0, 1.1)
     axes[3].axline((0, 0), slope=1, linestyle='--', color='gray')
     
     plt.suptitle(f'Performance Across Auditory, Visual, and Multimodal Conditions (Animal {animal_id})')
@@ -465,10 +467,9 @@ def get_scatter_plot_modalities(
     plt.show()
     
     
+    
     print("Skipped sessions (missing one or more modalities):", skipped_sessions)
     display(perf_per_condition)
-
-
 
 
 DEFAULT_OBJECT_IDS = [211, 212, 213, 214, 215, 216, 217, 218, 219]
@@ -811,7 +812,7 @@ def plot_visual_performance_per_object(
         labelsize=16
     )
     
-    axes[1].set_ylim(0, 1)
+    axes[1].set_ylim(0, 1.1)
     
     axes[1].grid(axis='y', alpha=0.2)
     
@@ -1484,3 +1485,221 @@ def plot_auditory_performance_per_object(
         f"(Animal {animal_id}, sessions: {from_s}-{to_s})"
     )
     plt.show()
+
+def compute_modality_performance(
+    animal_id,
+    from_session,
+    to_session,
+    stim,
+    exp,
+    manual_exclusion_sessions,
+    difficulties,
+):
+    difficulties = _get_difficulties({'difficulties': difficulties})
+    if difficulties is None:
+        return pd.DataFrame()
+
+    difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+
+    restr = exp.Session() & {'animal_id': animal_id}
+    valid_sessions = (restr - exp.Session.Excluded).fetch('session')
+
+    perf_per_condition = []
+
+    for session in range(from_session, to_session + 1):
+
+        if session not in valid_sessions or session in manual_exclusion_sessions:
+            continue
+
+        key = {'animal_id': animal_id, "session": session}
+
+        auditory_stateonset = (
+            stim.StimCondition.Trial *
+            (stim.Panda.Object).proj('obj_mag') *
+            exp.Trial.StateOnset *
+            difficulty *
+            (stim.Tones).proj('tone_volume')
+            & 'tone_volume > 0'
+            & key
+            & difficulty_filter
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+
+        auditory_stateonset['obj_mag'] = pd.to_numeric(auditory_stateonset['obj_mag'], errors='coerce')
+        auditory_stateonset = auditory_stateonset[auditory_stateonset['obj_mag'] == 0]
+
+        visual_stateonset = (
+            stim.StimCondition.Trial *
+            (stim.Panda.Object).proj('obj_mag') *
+            exp.Trial.StateOnset *
+            difficulty *
+            (stim.Tones).proj('tone_volume')
+            & 'tone_volume = 0'
+            & key
+            & difficulty_filter
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+
+        visual_stateonset['obj_mag'] = pd.to_numeric(visual_stateonset['obj_mag'], errors='coerce')
+        visual_stateonset = visual_stateonset[visual_stateonset['obj_mag'] > 0]
+
+        multi_stateonset = (
+            stim.StimCondition.Trial *
+            (stim.Panda.Object).proj('obj_mag') *
+            exp.Trial.StateOnset *
+            difficulty *
+            (stim.Tones).proj('tone_volume')
+            & 'tone_volume > 0'
+            & key
+            & difficulty_filter
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+
+        multi_stateonset['obj_mag'] = pd.to_numeric(multi_stateonset['obj_mag'], errors='coerce')
+        multi_stateonset = multi_stateonset[multi_stateonset['obj_mag'] > 0]
+
+        if len(auditory_stateonset) == 0 or len(visual_stateonset) == 0 or len(multi_stateonset) == 0:
+            continue
+
+        perf_per_condition.append({
+            'session': session,
+            'auditory_perf': round((auditory_stateonset['state'] == 'Reward').mean(),2),
+            'visual_perf': round((visual_stateonset['state'] == 'Reward').mean(), 2),
+            'multi_perf': round((multi_stateonset['state'] == 'Reward').mean(), 2),
+        })
+
+    return pd.DataFrame(perf_per_condition)
+
+def get_linePlot_per_modality_across_sessions(
+    animal_id,
+    from_session,
+    to_session,
+    stim,
+    exp,
+    manual_exclusion_sessions,
+    difficulties,
+    criterion=0.65
+):
+    perf_per_modality = compute_modality_performance(
+        animal_id,
+        from_session,
+        to_session,
+        stim,
+        exp,
+        manual_exclusion_sessions,
+        difficulties
+    )
+
+    if perf_per_modality.empty:
+        print(" 🚫 No data available for plotting.")
+        return
+
+    fig = plt.figure(figsize=(18, 5))
+
+    sns.lineplot(
+        data=perf_per_modality, 
+        x='session', 
+        y='auditory_perf', 
+        marker='o', 
+        label='Auditory'
+        )
+    
+    sns.lineplot(
+        data=perf_per_modality, 
+        x='session', 
+        y='visual_perf', 
+        marker='o', 
+        label='Visual')
+    
+    sns.lineplot(
+        data=perf_per_modality, 
+        x='session', 
+        y='multi_perf', 
+        marker='o', 
+        label='Multimodal'
+        )
+    
+    plt.title(
+        f'Performance across sessions in each modality\n(Animal: {animal_id}, Sessions: {from_session}-{to_session})',
+        fontsize=18
+        )
+    
+    plt.xlabel(
+        'Session idx', 
+        fontsize=18
+        )
+    
+    plt.ylabel(
+        'Performance', 
+        fontsize=18
+        )
+
+    plt.xticks(
+        rotation=80, 
+        )
+    
+    plt.ylim(0, 1.1)
+    
+    plt.tick_params(
+        axis='both', 
+        labelsize=16
+    )
+
+    plt.axhline(
+        0.5, 
+        color='grey', 
+        linestyle='--', 
+        alpha=0.3, 
+        label='chance'
+    )
+
+    plt.axhline(
+        criterion, 
+        color='green', 
+        linestyle='--', 
+        alpha=0.3, 
+        label=f'criterion ({criterion:.0%})'
+    )
+
+    plt.legend(fontsize=12)
+
+    plt.grid(alpha=0.3)
+
+    plt.show()
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
