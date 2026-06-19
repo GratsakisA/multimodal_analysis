@@ -64,7 +64,7 @@ def get_condition_distribution(
         key = {'animal_id': animal_id, "session":session}
     
         # auditory conditions = obj_mag = 0 & tone_volume > 0 ---------------------------------------------------------------
-        auditory_stateonset = (
+        auditory_trials = (
             stim.StimCondition.Trial 
             * (stim.Panda.Object).proj('obj_mag') 
             * exp.Trial.StateOnset 
@@ -76,11 +76,11 @@ def get_condition_distribution(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        auditory_stateonset['obj_mag'] = pd.to_numeric(auditory_stateonset['obj_mag'], errors='coerce')
-        auditory_stateonset = auditory_stateonset[auditory_stateonset['obj_mag'] == 0]
+        auditory_trials['obj_mag'] = pd.to_numeric(auditory_trials['obj_mag'], errors='coerce')
+        auditory_trials = auditory_trials[auditory_trials['obj_mag'] == 0]
     
         # visual conditions = obj_mag > 0 & tone_volume = 0 ---------------------------------------------------------------
-        visual_stateonset = (
+        visual_trials = (
             stim.StimCondition.Trial  
             * (stim.Panda.Object).proj('obj_mag') 
             * exp.Trial.StateOnset 
@@ -93,11 +93,11 @@ def get_condition_distribution(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        visual_stateonset['obj_mag'] = pd.to_numeric(visual_stateonset['obj_mag'], errors='coerce')
-        visual_stateonset = visual_stateonset[visual_stateonset['obj_mag'] > 0]
+        visual_trials['obj_mag'] = pd.to_numeric(visual_trials['obj_mag'], errors='coerce')
+        visual_trials = visual_trials[visual_trials['obj_mag'] > 0]
     
         # multimodal conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
-        multi_stateonset = (
+        multi_trials = (
             stim.StimCondition.Trial 
             * (stim.Panda.Object).proj('obj_mag') 
             * exp.Trial.StateOnset
@@ -110,11 +110,11 @@ def get_condition_distribution(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        multi_stateonset['obj_mag'] = pd.to_numeric(multi_stateonset['obj_mag'], errors='coerce')
-        multi_stateonset = multi_stateonset[multi_stateonset['obj_mag'] > 0]
+        multi_trials['obj_mag'] = pd.to_numeric(multi_trials['obj_mag'], errors='coerce')
+        multi_trials = multi_trials[multi_trials['obj_mag'] > 0]
     
         # multimodal 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
-        multi215_stateonset = (
+        multi215_trials = (
             stim.StimCondition.Trial 
             * (stim.Panda.Object).proj('obj_mag')  
             * exp.Trial.StateOnset 
@@ -127,11 +127,11 @@ def get_condition_distribution(
             & 'state in ("Punish")'
         ).fetch(format='frame').reset_index()
         
-        multi215_stateonset['obj_mag'] = pd.to_numeric(multi215_stateonset['obj_mag'], errors='coerce')
-        multi215_stateonset = multi215_stateonset[multi215_stateonset['obj_mag'] > 0]
+        multi215_trials['obj_mag'] = pd.to_numeric(multi215_trials['obj_mag'], errors='coerce')
+        multi215_trials = multi215_trials[multi215_trials['obj_mag'] > 0]
     
         # visual 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
-        visual215_stateonset = (
+        visual215_trials = (
             stim.StimCondition.Trial  
             * (stim.Panda.Object).proj('obj_mag') 
             * exp.Trial.StateOnset 
@@ -144,16 +144,16 @@ def get_condition_distribution(
             & 'state in ("Punish")'
         ).fetch(format='frame').reset_index()
         
-        visual215_stateonset['obj_mag'] = pd.to_numeric(visual215_stateonset['obj_mag'], errors='coerce')
-        visual215_stateonset = visual215_stateonset[visual215_stateonset['obj_mag'] > 0]
+        visual215_trials['obj_mag'] = pd.to_numeric(visual215_trials['obj_mag'], errors='coerce')
+        visual215_trials = visual215_trials[visual215_trials['obj_mag'] > 0]
     
     
         # ---- replace with real per-session computation ----
-        auditory_trials = len(auditory_stateonset)
-        visual_trials = len(visual_stateonset)
-        multimodal_trials = len(multi_stateonset)
-        visual215_trials = len(visual215_stateonset)
-        multi215_trials = len(multi215_stateonset)
+        auditory_trials = len(auditory_trials)
+        visual_trials = len(visual_trials)
+        multimodal_trials = len(multi_trials)
+        visual215_trials = len(visual215_trials)
+        multi215_trials = len(multi215_trials)
     
         sizes = np.array([auditory_trials, visual_trials, multimodal_trials, multi215_trials, visual215_trials])
         total = sizes.sum()
@@ -272,7 +272,7 @@ def get_scatter_plot_modalities(
         key = {'animal_id': animal_id, "session":session}
     
         # auditory conditions = obj_mag = 0 & tone_volume > 0
-        auditory_stateonset = (
+        auditory_trials = (
             stim.StimCondition.Trial * 
             (stim.Panda.Object).proj('obj_mag') * 
             exp.Trial.StateOnset * 
@@ -284,11 +284,11 @@ def get_scatter_plot_modalities(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        auditory_stateonset['obj_mag'] = pd.to_numeric(auditory_stateonset['obj_mag'], errors='coerce')
-        auditory_stateonset = auditory_stateonset[auditory_stateonset['obj_mag'] == 0]
+        auditory_trials['obj_mag'] = pd.to_numeric(auditory_trials['obj_mag'], errors='coerce')
+        auditory_trials = auditory_trials[auditory_trials['obj_mag'] == 0]
     
         # visual conditions = obj_mag > 0 & tone_volume = 0
-        visual_stateonset = (
+        visual_trials = (
             stim.StimCondition.Trial * 
             (stim.Panda.Object).proj('obj_mag') * 
             exp.Trial.StateOnset * 
@@ -300,11 +300,11 @@ def get_scatter_plot_modalities(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        visual_stateonset['obj_mag'] = pd.to_numeric(visual_stateonset['obj_mag'], errors='coerce')
-        visual_stateonset = visual_stateonset[visual_stateonset['obj_mag'] > 0]
+        visual_trials['obj_mag'] = pd.to_numeric(visual_trials['obj_mag'], errors='coerce')
+        visual_trials = visual_trials[visual_trials['obj_mag'] > 0]
     
         # multimodal conditions = obj_mag > 0 & tone_volume > 0
-        multi_stateonset = (
+        multi_trials = (
             stim.StimCondition.Trial * 
             (stim.Panda.Object).proj('obj_mag') * 
             exp.Trial.StateOnset * 
@@ -316,10 +316,10 @@ def get_scatter_plot_modalities(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        multi_stateonset['obj_mag'] = pd.to_numeric(multi_stateonset['obj_mag'], errors='coerce')
-        multi_stateonset = multi_stateonset[multi_stateonset['obj_mag'] > 0]
+        multi_trials['obj_mag'] = pd.to_numeric(multi_trials['obj_mag'], errors='coerce')
+        multi_trials = multi_trials[multi_trials['obj_mag'] > 0]
     
-        unimodal_stateonset = (
+        unimodal_trials = (
             stim.StimCondition.Trial *
             (stim.Panda.Object).proj('obj_mag') *
             exp.Trial.StateOnset *
@@ -330,43 +330,43 @@ def get_scatter_plot_modalities(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
-        unimodal_stateonset['obj_mag'] = pd.to_numeric(
-            unimodal_stateonset['obj_mag'],
+        unimodal_trials['obj_mag'] = pd.to_numeric(
+            unimodal_trials['obj_mag'],
             errors='coerce'
         )
         
-        unimodal_stateonset['tone_volume'] = pd.to_numeric(
-            unimodal_stateonset['tone_volume'],
+        unimodal_trials['tone_volume'] = pd.to_numeric(
+            unimodal_trials['tone_volume'],
             errors='coerce'
         )
         
         # apply the OR condition in pandas
-        unimodal_stateonset = unimodal_stateonset[
+        unimodal_trials = unimodal_trials[
             (
-                (unimodal_stateonset['obj_mag'] > 0) &
-                (unimodal_stateonset['tone_volume'] == 0)
+                (unimodal_trials['obj_mag'] > 0) &
+                (unimodal_trials['tone_volume'] == 0)
             )
             |
             (
-                (unimodal_stateonset['obj_mag'] == 0) &
-                (unimodal_stateonset['tone_volume'] > 0)
+                (unimodal_trials['obj_mag'] == 0) &
+                (unimodal_trials['tone_volume'] > 0)
             )
         ]
     
         # Skip sessions missing ANY modality
         if (
-            len(auditory_stateonset) == 0 or
-            len(visual_stateonset) == 0 or
-            len(multi_stateonset) == 0
+            len(auditory_trials) == 0 or
+            len(visual_trials) == 0 or
+            len(multi_trials) == 0
         ):
             skipped_sessions.append(session)
             continue
     
         # Calculate the performance in each condition
-        visual_perf = round((visual_stateonset['state'] == 'Reward').mean(), 2)
-        auditory_perf = round((auditory_stateonset['state'] == 'Reward').mean(), 2)
-        multi_perf = round((multi_stateonset['state'] == 'Reward').mean(), 2)
-        uni_perf = round((unimodal_stateonset['state'] == 'Reward').mean(), 2)
+        visual_perf = round((visual_trials['state'] == 'Reward').mean(), 2)
+        auditory_perf = round((auditory_trials['state'] == 'Reward').mean(), 2)
+        multi_perf = round((multi_trials['state'] == 'Reward').mean(), 2)
+        uni_perf = round((unimodal_trials['state'] == 'Reward').mean(), 2)
     
         perf_per_condition.append({
             'session': session,
@@ -892,7 +892,7 @@ def _process_multimodal_object(
         obj_ids = OBJECT_ALIASES.get(obj_id, [obj_id])
         obj_query = ' OR '.join([f'obj_id={o}' for o in obj_ids])
 
-        multi_stateonset = pd.DataFrame(
+        multi_trials = pd.DataFrame(
             (
                 stim.StimCondition.Trial
                 * stim.Panda.Object.proj('obj_mag')
@@ -909,26 +909,26 @@ def _process_multimodal_object(
             )
         )
 
-        if multi_stateonset.empty:
+        if multi_trials.empty:
             continue
 
-        multi_stateonset['obj_mag'] = pd.to_numeric(
-            multi_stateonset['obj_mag'],
+        multi_trials['obj_mag'] = pd.to_numeric(
+            multi_trials['obj_mag'],
             errors='coerce'
         )
 
-        multi_stateonset = multi_stateonset[
-            multi_stateonset['obj_mag'] > 0
+        multi_trials = multi_trials[
+            multi_trials['obj_mag'] > 0
         ]
 
-        if multi_stateonset.empty:
+        if multi_trials.empty:
             continue
 
         total_trials = len(exp.Trial & key_session)
 
-        rew = (multi_stateonset['state'] == 'Reward').sum()
-        pun = (multi_stateonset['state'] == 'Punish').sum()
-        abrt = (multi_stateonset['state'] == 'Abort').sum()
+        rew = (multi_trials['state'] == 'Reward').sum()
+        pun = (multi_trials['state'] == 'Punish').sum()
+        abrt = (multi_trials['state'] == 'Abort').sum()
 
         valid = rew + pun
 
@@ -1668,11 +1668,169 @@ def get_linePlot_per_modality_across_sessions(
 
     plt.show()
 
+def calculate_response_type(
+    animal_id,
+    from_session,
+    to_session,
+    stim,
+    exp,
+    manual_exclusion_sessions,
+    difficulties,
+):
+    difficulties = _get_difficulties({'difficulties': difficulties})
+    
+    if difficulties is None:
+        return
+
+    difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+        
+    restr = exp.Session() & {'animal_id': animal_id}
+    valid_sessions = (restr - exp.Session.Excluded).fetch('session')
+
+    rows = []
+
+    for session in range(from_session, to_session + 1):
+        if session not in valid_sessions:
+            continue
+        
+        if session in manual_exclusion_sessions:
+            continue
+    
+        key = {'animal_id': animal_id, "session":session}
+
+        session_trials = (
+            stim.StimCondition.Trial 
+            * exp.Trial.StateOnset 
+            * difficulty
+            & difficulty_filter
+            & key
+            & 'state in ("Reward", "Punish", "Abort")'
+        ).fetch(format='frame').reset_index()
+
+        if session_trials.empty:
+            continue
+
+        for state in ['Reward', 'Punish', 'Abort']:
+            rows.append(
+                {
+                    'session': session,
+                    'state': state,
+                    'n_trials': (session_trials['state'] == state).sum()
+                }
+            )
+
+    response_counts = pd.DataFrame(rows)
+
+    if response_counts.empty:
+        print("🚫 No response data available for plotting.")
+        return response_counts
+
+    sessions = sorted(response_counts['session'].unique())
+    session_map = {session: idx for idx, session in enumerate(sessions)}
+    response_counts['session_idx'] = response_counts['session'].map(session_map)
+
+
+    counts_wide = response_counts.pivot(
+    index='session_idx',
+    columns='state',
+    values='n_trials'
+    ).fillna(0)
     
 
+    plt.figure(figsize=(max(8, len(sessions) * 1.2), 5))
+
+    total_counts = (
+        response_counts
+        .groupby('session_idx', as_index=False)['n_trials']
+        .sum()
+    )
+
+    plt.bar(
+        total_counts['session_idx'],
+        total_counts['n_trials'],
+        width=0.85,
+        color='gray',
+        alpha=0.10,
+        label='Total trials',
+        zorder=1
+    )
+
+    x = counts_wide.index
+
+    plt.bar(
+        x - 0.18,
+        counts_wide['Reward'],
+        color = "#36BF00",
+        width=0.3,
+        label='Reward',
+        zorder=2
+        )
+    
+    plt.bar(
+        x - 0.18,
+        counts_wide['Punish'],
+        bottom=counts_wide['Reward'],
+        color = "#FF0000",
+        width=0.3,
+        label='Punish',
+        zorder=2
+        )
+    
+    plt.bar(
+        x + 0.18,
+        counts_wide['Abort'],
+        width=0.3,
+        color="#000000",
+        label='Abort',
+        zorder=2
+        )
+
+    plt.xticks(
+        ticks=range(len(sessions)),
+        labels=sessions,
+        rotation=80
+    )
+
+    plt.xlabel(
+        'Session idx', 
+        fontsize=18
+        )
+
+    plt.ylabel(
+        'Number of trials',
+        fontsize=18
+    )
+
+    plt.title(
+        f'Response counts across all trial modalities (Animal: {animal_id}, Sessions: {from_session}-{to_session})',
+        fontsize=18
+    )
+
+    plt.tick_params(
+        axis='both',
+        labelsize=12
+    )
+
+    plt.legend(
+        title='Response',
+        fontsize=12,
+        title_fontsize=12
+    )
+
+    plt.grid(
+        axis='y',
+        alpha=0.3
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+    return 
 
 
 
+    
 
 
 
