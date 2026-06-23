@@ -73,7 +73,8 @@ def get_condition_distribution(
             & difficulty_filter
             & 'tone_volume > 0'
             & key
-            & 'state in ("Reward", "Punish")'
+            # & 'state in ("Reward", "Punish")'
+            & 'state in ("Reward", "Punish", "Abort")'
         ).fetch(format='frame').reset_index()
         
         auditory_trials['obj_mag'] = pd.to_numeric(auditory_trials['obj_mag'], errors='coerce')
@@ -90,7 +91,8 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id != 215'
-            & 'state in ("Reward", "Punish")'
+            # & 'state in ("Reward", "Punish")'
+            & 'state in ("Reward", "Punish", "Abort")'
         ).fetch(format='frame').reset_index()
         
         visual_trials['obj_mag'] = pd.to_numeric(visual_trials['obj_mag'], errors='coerce')
@@ -107,7 +109,8 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id != 215'
-            & 'state in ("Reward", "Punish")'
+            # & 'state in ("Reward", "Punish")'
+            & 'state in ("Reward", "Punish", "Abort")'
         ).fetch(format='frame').reset_index()
         
         multi_trials['obj_mag'] = pd.to_numeric(multi_trials['obj_mag'], errors='coerce')
@@ -124,7 +127,8 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id=215'
-            & 'state in ("Punish")'
+            # & 'state in ("Punish")'
+            & 'state in ("Reward", "Punish", "Abort")'
         ).fetch(format='frame').reset_index()
         
         multi215_trials['obj_mag'] = pd.to_numeric(multi215_trials['obj_mag'], errors='coerce')
@@ -141,7 +145,8 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id=215'
-            & 'state in ("Punish")'
+            # & 'state in ("Punish")'
+            & 'state in ("Reward", "Punish", "Abort")'
         ).fetch(format='frame').reset_index()
         
         visual215_trials['obj_mag'] = pd.to_numeric(visual215_trials['obj_mag'], errors='coerce')
@@ -1537,6 +1542,7 @@ def compute_modality_performance(
             (stim.Tones).proj('tone_volume')
             & 'tone_volume = 0'
             & key
+            & 'obj_id != 215'
             & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
@@ -1552,6 +1558,7 @@ def compute_modality_performance(
             (stim.Tones).proj('tone_volume')
             & 'tone_volume > 0'
             & key
+            & 'obj_id != 215'
             & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
@@ -1595,11 +1602,15 @@ def get_linePlot_per_modality_across_sessions(
         print(" 🚫 No data available for plotting.")
         return
 
-    fig = plt.figure(figsize=(18, 5))
+    perf_per_modality = perf_per_modality.sort_values('session').copy()
+    sessions = perf_per_modality['session'].tolist()
+    perf_per_modality['session_idx'] = range(len(perf_per_modality))
+
+    plt.figure(figsize=(max(8, len(sessions) * 1.2), 5))
 
     sns.lineplot(
         data=perf_per_modality, 
-        x='session', 
+        x='session_idx', 
         y='auditory_perf', 
         marker='o', 
         label='Auditory'
@@ -1607,14 +1618,14 @@ def get_linePlot_per_modality_across_sessions(
     
     sns.lineplot(
         data=perf_per_modality, 
-        x='session', 
+        x='session_idx', 
         y='visual_perf', 
         marker='o', 
         label='Visual')
     
     sns.lineplot(
         data=perf_per_modality, 
-        x='session', 
+        x='session_idx', 
         y='multi_perf', 
         marker='o', 
         label='Multimodal'
@@ -1636,8 +1647,10 @@ def get_linePlot_per_modality_across_sessions(
         )
 
     plt.xticks(
-        rotation=80, 
-        )
+        ticks=range(len(sessions)),
+        labels=sessions,
+        rotation=80
+    )
     
     plt.ylim(0, 1.1)
     
@@ -1831,7 +1844,6 @@ def calculate_response_type(
 
 
     
-
 
 
 
