@@ -33,6 +33,7 @@ def get_condition_distribution(
     exp,
     manual_exclusion_sessions,
     difficulties,
+    incl_aborts=False
 ):
     difficulties = _get_difficulties({'difficulties': difficulties})
     
@@ -41,6 +42,12 @@ def get_condition_distribution(
 
     difficulty_filter = [{'difficulty': d} for d in difficulties]
     difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+
+    state_filter = (
+        'state in ("Reward", "Punish", "Abort")'
+        if incl_aborts
+        else 'state in ("Reward", "Punish")'
+        )
         
     restr = exp.Session() & {'animal_id': animal_id}
     valid_sessions = (restr - exp.Session.Excluded).fetch('session')
@@ -73,8 +80,7 @@ def get_condition_distribution(
             & difficulty_filter
             & 'tone_volume > 0'
             & key
-            # & 'state in ("Reward", "Punish")'
-            & 'state in ("Reward", "Punish", "Abort")'
+            & state_filter
         ).fetch(format='frame').reset_index()
         
         auditory_trials['obj_mag'] = pd.to_numeric(auditory_trials['obj_mag'], errors='coerce')
@@ -91,8 +97,7 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id != 215'
-            # & 'state in ("Reward", "Punish")'
-            & 'state in ("Reward", "Punish", "Abort")'
+            & state_filter
         ).fetch(format='frame').reset_index()
         
         visual_trials['obj_mag'] = pd.to_numeric(visual_trials['obj_mag'], errors='coerce')
@@ -109,8 +114,7 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id != 215'
-            # & 'state in ("Reward", "Punish")'
-            & 'state in ("Reward", "Punish", "Abort")'
+            & state_filter
         ).fetch(format='frame').reset_index()
         
         multi_trials['obj_mag'] = pd.to_numeric(multi_trials['obj_mag'], errors='coerce')
@@ -127,8 +131,7 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id=215'
-            # & 'state in ("Punish")'
-            & 'state in ("Reward", "Punish", "Abort")'
+            & state_filter
         ).fetch(format='frame').reset_index()
         
         multi215_trials['obj_mag'] = pd.to_numeric(multi215_trials['obj_mag'], errors='coerce')
@@ -145,8 +148,7 @@ def get_condition_distribution(
             & key
             & difficulty_filter
             & 'obj_id=215'
-            # & 'state in ("Punish")'
-            & 'state in ("Reward", "Punish", "Abort")'
+            & state_filter
         ).fetch(format='frame').reset_index()
         
         visual215_trials['obj_mag'] = pd.to_numeric(visual215_trials['obj_mag'], errors='coerce')
@@ -232,7 +234,7 @@ def get_condition_distribution(
     )
     
     plt.title(
-        f'Trial Modality Distribution (Animal {animal_id}) - valids Only', 
+        f'Trial Modality Distribution (Animal {animal_id}) - valids Only' if not incl_aborts else f'Trial Modality Distribution (Animal {animal_id}) - valids + aborts', 
         fontsize=12
     )
     
@@ -302,6 +304,7 @@ def get_scatter_plot_modalities(
             & 'tone_volume = 0'
             & key
             & difficulty_filter
+            & 'obj_id != 215'
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -318,6 +321,7 @@ def get_scatter_plot_modalities(
             & 'tone_volume > 0'
             & key
             & difficulty_filter
+            & 'obj_id != 215'
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -332,6 +336,7 @@ def get_scatter_plot_modalities(
             (stim.Tones).proj('tone_volume')
             & key
             & difficulty_filter
+            & 'obj_id != 215'
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
         
@@ -1841,6 +1846,60 @@ def calculate_response_type(
 
     return 
 
+
+class multimodal_obj215:
+    def __init__(self, animal_id, from_session, to_session, stim, exp, manual_exclusion_sessions, difficulties):
+        self.animal_id = animal_id
+        self.from_session = from_session
+        self.to_session = to_session
+        self.stim = stim
+        self.exp = exp
+        self.manual_exclusion_sessions = manual_exclusion_sessions
+        self.difficulties = difficulties
+
+    def get_trials_summary(self):
+
+        difficulties = _get_difficulties({'difficulties': self.difficulties})
+        
+        if self.difficulties is None:
+            return
+
+        difficulty_filter = [{'difficulty': d} for d in self.difficulties]
+        difficulty = (self.exp.Condition.MatchPort() * self.exp.Trial()).proj('difficulty')
+            
+        restr = self.exp.Session() & {'animal_id': self.animal_id}
+        valid_sessions = (restr - self.exp.Session.Excluded).fetch('session')
+
+        for session in range(self.from_session, self.to_session + 1):
+            if session not in valid_sessions:
+                continue
+            
+            if session in self.manual_exclusion_sessions:
+                continue
+        
+            key = {'animal_id': self.animal_id, "session":session}
+
+            multi215_trials = (
+                self.stim.StimCondition.Trial 
+                * (self.stim.Panda.Object).proj('obj_mag')  
+                * self.exp.Trial.StateOnset 
+                * difficulty
+                * (self.stim.Tones).proj('tone_volume', 'tone_pulse_freq') 
+                & 'tone_volume > 0'
+                & difficulty_filter
+                & key
+                & 'obj_id=215'
+                & 'state in ("Reward", "Punish")'
+            ).fetch(format='frame').reset_index()
+        
+            multi215_trials['obj_mag'] = pd.to_numeric(multi215_trials['obj_mag'], errors='coerce')    
+            multi215_trials = multi215_trials[multi215_trials['obj_mag'] > 0]
+
+
+            if multi215_trials.empty:
+                continue
+
+        return multi215_trials
 
 
     
