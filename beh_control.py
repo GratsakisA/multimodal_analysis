@@ -5,6 +5,8 @@ import seaborn as sns
 import numpy as np
 import os
 from IPython.display import display, HTML
+from matplotlib.dates import DateFormatter
+
 
 # ---------------- DATABASE CONFIG ----------------
 dj.config['database.password'] = os.getenv('DJ_PASSWORD')
