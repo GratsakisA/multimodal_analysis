@@ -59,6 +59,8 @@ def get_condition_distribution(
     multimodal_pct = []
     multimodal_215_pct = []
     visual_215_pct = []
+    multi_difficult_pct = []
+    visual_difficult_pct = []
 
     
     for session in range(from_session, to_session + 1):
@@ -96,12 +98,47 @@ def get_condition_distribution(
             & 'tone_volume = 0'
             & key
             & difficulty_filter
-            & 'obj_id != 215'
+            & 'obj_id NOT IN (214, 215, 217, 216)'
             & state_filter
         ).fetch(format='frame').reset_index()
         
         visual_trials['obj_mag'] = pd.to_numeric(visual_trials['obj_mag'], errors='coerce')
         visual_trials = visual_trials[visual_trials['obj_mag'] > 0]
+
+        # visual diffucult conditions = obj_mag > 0 & tone_volume = 0 ---------------------------------------------------------------
+        visual_difficult_trials = (
+            stim.StimCondition.Trial  
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
+            & 'tone_volume = 0'
+            & key
+            & difficulty_filter
+            & 'obj_id IN (214, 217, 216)'
+            & state_filter
+        ).fetch(format='frame').reset_index()
+        
+        visual_difficult_trials['obj_mag'] = pd.to_numeric(visual_difficult_trials['obj_mag'], errors='coerce')
+        visual_difficult_trials = visual_difficult_trials[visual_difficult_trials['obj_mag'] > 0]
+
+        # visual 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
+        visual215_trials = (
+            stim.StimCondition.Trial  
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
+            & 'tone_volume = 0'
+            & key
+            & difficulty_filter
+            & 'obj_id=215'
+            & state_filter
+        ).fetch(format='frame').reset_index()
+        
+        visual215_trials['obj_mag'] = pd.to_numeric(visual215_trials['obj_mag'], errors='coerce')
+        visual215_trials = visual215_trials[visual215_trials['obj_mag'] > 0]
+    
     
         # multimodal conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
         multi_trials = (
@@ -113,7 +150,7 @@ def get_condition_distribution(
             & 'tone_volume > 0'
             & key
             & difficulty_filter
-            & 'obj_id != 215'
+            & 'obj_id NOT IN (214, 215, 217, 216)'
             & state_filter
         ).fetch(format='frame').reset_index()
         
@@ -136,23 +173,23 @@ def get_condition_distribution(
         
         multi215_trials['obj_mag'] = pd.to_numeric(multi215_trials['obj_mag'], errors='coerce')
         multi215_trials = multi215_trials[multi215_trials['obj_mag'] > 0]
-    
-        # visual 50-50 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
-        visual215_trials = (
-            stim.StimCondition.Trial  
-            * (stim.Panda.Object).proj('obj_mag') 
+
+        # multimodal 214 & 217 conditions = obj_mag > 0 & tone_volume > 0 ---------------------------------------------------------------
+        multi_difficult_trials = (
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag')  
             * exp.Trial.StateOnset 
             * difficulty
             * (stim.Tones).proj('tone_volume') 
-            & 'tone_volume = 0'
+            & 'tone_volume > 0'
             & key
             & difficulty_filter
-            & 'obj_id=215'
+            & 'obj_id IN (214, 217, 216)'
             & state_filter
         ).fetch(format='frame').reset_index()
         
-        visual215_trials['obj_mag'] = pd.to_numeric(visual215_trials['obj_mag'], errors='coerce')
-        visual215_trials = visual215_trials[visual215_trials['obj_mag'] > 0]
+        multi_difficult_trials['obj_mag'] = pd.to_numeric(multi_difficult_trials['obj_mag'], errors='coerce')
+        multi_difficult_trials = multi_difficult_trials[multi_difficult_trials['obj_mag'] > 0]
     
     
         # ---- replace with real per-session computation ----
@@ -161,8 +198,10 @@ def get_condition_distribution(
         multimodal_trials = len(multi_trials)
         visual215_trials = len(visual215_trials)
         multi215_trials = len(multi215_trials)
+        multi_difficult_trials = len(multi_difficult_trials)
+        visual_difficult_trials = len(visual_difficult_trials)
     
-        sizes = np.array([auditory_trials, visual_trials, multimodal_trials, multi215_trials, visual215_trials])
+        sizes = np.array([auditory_trials, visual_trials, multimodal_trials, multi215_trials, visual215_trials, multi_difficult_trials, visual_difficult_trials])
         total = sizes.sum()
     
         if total == 0:
@@ -174,6 +213,8 @@ def get_condition_distribution(
         multimodal_pct.append(sizes[2] / total * 100)
         multimodal_215_pct.append(sizes[3] / total * 100)
         visual_215_pct.append(sizes[4] / total * 100)
+        multi_difficult_pct.append(sizes[5] / total * 100)
+        visual_difficult_pct.append(sizes[6] / total * 100)
 
     if not sessions:
         print("🚫 No valid data for plotting")
@@ -185,6 +226,8 @@ def get_condition_distribution(
     multimodal_pct = np.array(multimodal_pct)
     multimodal_215_pct = np.array(multimodal_215_pct)
     visual_215_pct = np.array(visual_215_pct)
+    multi_difficult_pct = np.array(multi_difficult_pct)
+    visual_difficult_pct = np.array(visual_difficult_pct)
     
     y = np.arange(len(sessions))  
     
@@ -196,6 +239,8 @@ def get_condition_distribution(
         ('Multimodal', multimodal_pct),
         ('Multimodal_50/50', multimodal_215_pct),
         ('Visual_50/50', visual_215_pct),
+        ('Visual_difficult', visual_difficult_pct),
+        ('Multimodal_difficult', multi_difficult_pct)
     ]
 
     left = np.zeros(len(sessions))
