@@ -1847,44 +1847,100 @@ def calculate_response_type(
     return 
 
 
-class multimodal_obj215:
-    def __init__(self, animal_id, from_session, to_session, stim, exp, manual_exclusion_sessions, difficulties):
-        self.animal_id = animal_id
-        self.from_session = from_session
-        self.to_session = to_session
-        self.stim = stim
-        self.exp = exp
-        self.manual_exclusion_sessions = manual_exclusion_sessions
-        self.difficulties = difficulties
-
-    def get_trials_summary(self):
-
-        difficulties = _get_difficulties({'difficulties': self.difficulties})
+class obj215_trials:
+    @staticmethod
+    def get_multimodal_trials_summary(
+        animal_id,
+        from_session,
+        to_session,
+        manual_exclusion_sessions,
+        difficulties
+    ):
+            
+        difficulties = _get_difficulties({'difficulties': difficulties})
         
-        if self.difficulties is None:
+        if difficulties is None:
             return
 
-        difficulty_filter = [{'difficulty': d} for d in self.difficulties]
-        difficulty = (self.exp.Condition.MatchPort() * self.exp.Trial()).proj('difficulty')
+        difficulty_filter = [{'difficulty': d} for d in difficulties]
+        difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
             
-        restr = self.exp.Session() & {'animal_id': self.animal_id}
-        valid_sessions = (restr - self.exp.Session.Excluded).fetch('session')
+        restr = exp.Session() & {'animal_id': animal_id}
+        valid_sessions = (restr - exp.Session.Excluded).fetch('session')
 
-        for session in range(self.from_session, self.to_session + 1):
+        rows = []
+
+        for session in range(from_session, to_session + 1):
             if session not in valid_sessions:
                 continue
             
-            if session in self.manual_exclusion_sessions:
+            if session in manual_exclusion_sessions:
                 continue
         
-            key = {'animal_id': self.animal_id, "session":session}
+            key = {'animal_id': animal_id, "session": session}
+
+            session_date = (exp.Session() & key).fetch1('session_tmst').strftime('%Y-%m-%d')
+
+            licks = (
+                beh.Activity.Lick()
+                & key
+            ).fetch(format='frame').reset_index()
+
+            if licks.empty:
+                continue
+
+            licks['port'] = pd.to_numeric(licks['port'], errors='coerce')
+
+            first_licks = (
+                licks
+                .sort_values(['trial_idx', 'time'])
+                .drop_duplicates('trial_idx', keep='first')
+                [['animal_id', 'session', 'trial_idx', 'port']]
+                .rename(columns={'port': 'lick_port'})
+            )
+
+            lick_counts = (
+                licks[licks['port'].isin([1, 2])]
+                .groupby(['animal_id', 'session', 'trial_idx', 'port'])
+                .size()
+                .unstack(fill_value=0)
+                .rename(columns={
+                    1: 'lick_port1_count',
+                    2: 'lick_port2_count'
+                })
+                .reset_index()
+            )
+
+            for column in ['lick_port1_count', 'lick_port2_count']:
+                if column not in lick_counts:
+                    lick_counts[column] = 0
+
+            trial_licks = first_licks.merge(
+                lick_counts[
+                    [
+                        'animal_id',
+                        'session',
+                        'trial_idx',
+                        'lick_port1_count',
+                        'lick_port2_count'
+                    ]
+                ],
+                on=['animal_id', 'session', 'trial_idx'],
+                how='left'
+            )
+
+            trial_licks[['lick_port1_count', 'lick_port2_count']] = (
+                trial_licks[['lick_port1_count', 'lick_port2_count']]
+                .fillna(0)
+                .astype(int)
+            )
 
             multi215_trials = (
-                self.stim.StimCondition.Trial 
-                * (self.stim.Panda.Object).proj('obj_mag')  
-                * self.exp.Trial.StateOnset 
+                stim.StimCondition.Trial 
+                * (stim.Panda.Object).proj('obj_mag')  
+                * exp.Trial.StateOnset 
                 * difficulty
-                * (self.stim.Tones).proj('tone_volume', 'tone_pulse_freq') 
+                * (stim.Tones).proj('tone_volume', 'tone_pulse_freq') 
                 & 'tone_volume > 0'
                 & difficulty_filter
                 & key
@@ -1895,19 +1951,181 @@ class multimodal_obj215:
             multi215_trials['obj_mag'] = pd.to_numeric(multi215_trials['obj_mag'], errors='coerce')    
             multi215_trials = multi215_trials[multi215_trials['obj_mag'] > 0]
 
+            multi215_trials = multi215_trials.merge(
+                trial_licks,
+                on=['animal_id', 'session', 'trial_idx'],
+                how='inner'
+            )
+            multi215_trials['lick_port'] = pd.to_numeric(multi215_trials['lick_port'], errors='coerce')
 
             if multi215_trials.empty:
                 continue
 
-        return multi215_trials
+            multi_correct = (
+                (multi215_trials['tone_pulse_freq'] == 100)
+                & (multi215_trials['lick_port'] == 2)
+            )
+
+            rows.append({
+                'animal_id': animal_id,
+                'session': session,
+                'date': session_date,
+                'multi_obj215_trials': len(multi215_trials),
+                'multi_perf': round(multi_correct.mean(), 2),
+                'rewards': (multi215_trials['state'] == 'Reward').sum(),
+                'punishments': (multi215_trials['state'] == 'Punish').sum(),
+                'abortions': (multi215_trials['state'] == 'Abort').sum(),
+                'correct_licks': multi_correct.sum(),
+                'incorrect_licks': len(multi215_trials) - multi_correct.sum(),
+                'port1_licks': multi215_trials['lick_port1_count'].sum(),
+                'port2_licks': multi215_trials['lick_port2_count'].sum()
+                }
+                )
+
+        if not rows:
+            return pd.DataFrame()
+
+        return pd.DataFrame(rows)
+    
+    @staticmethod
+    def get_visual_trials_summary(
+        animal_id,
+        from_session,
+        to_session,
+        manual_exclusion_sessions,
+        difficulties,
+    ):
+            
+        difficulties = _get_difficulties({'difficulties': difficulties})
+        
+        if difficulties is None:
+            return
+
+        difficulty_filter = [{'difficulty': d} for d in difficulties]
+        difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+            
+        restr = exp.Session() & {'animal_id': animal_id}
+        valid_sessions = (restr - exp.Session.Excluded).fetch('session')
+
+        rows = []
+
+        for session in range(from_session, to_session + 1):
+            if session not in valid_sessions:
+                continue
+            
+            if session in manual_exclusion_sessions:
+                continue
+        
+            key = {'animal_id': animal_id, "session": session}
+
+            session_date = (exp.Session() & key).fetch1('session_tmst').strftime('%Y-%m-%d')
+
+            licks = (
+                beh.Activity.Lick()
+                & key
+            ).fetch(format='frame').reset_index()
+
+            if licks.empty:
+                continue
+
+            licks['port'] = pd.to_numeric(licks['port'], errors='coerce')
+
+            first_licks = (
+                licks
+                .sort_values(['trial_idx', 'time'])
+                .drop_duplicates('trial_idx', keep='first')
+                [['animal_id', 'session', 'trial_idx', 'port']]
+                .rename(columns={'port': 'lick_port'})
+            )
+
+            lick_counts = (
+                licks[licks['port'].isin([1, 2])]
+                .groupby(['animal_id', 'session', 'trial_idx', 'port'])
+                .size()
+                .unstack(fill_value=0)
+                .rename(columns={
+                    1: 'lick_port1_count',
+                    2: 'lick_port2_count'
+                })
+                .reset_index()
+            )
+
+            for column in ['lick_port1_count', 'lick_port2_count']:
+                if column not in lick_counts:
+                    lick_counts[column] = 0
+
+            trial_licks = first_licks.merge(
+                lick_counts[
+                    [
+                        'animal_id',
+                        'session',
+                        'trial_idx',
+                        'lick_port1_count',
+                        'lick_port2_count'
+                    ]
+                ],
+                on=['animal_id', 'session', 'trial_idx'],
+                how='left'
+            )
+
+            trial_licks[['lick_port1_count', 'lick_port2_count']] = (
+                trial_licks[['lick_port1_count', 'lick_port2_count']]
+                .fillna(0)
+                .astype(int)
+            )
+
+            visual215_trials = (
+                stim.StimCondition.Trial 
+                * (stim.Panda.Object).proj('obj_mag')  
+                * exp.Trial.StateOnset 
+                * difficulty
+                * (stim.Tones).proj('tone_volume', 'tone_pulse_freq') 
+                & 'tone_volume > 0'
+                & difficulty_filter
+                & key
+                & 'obj_id=215'
+                & 'state in ("Reward", "Punish")'
+            ).fetch(format='frame').reset_index()
+        
+            visual215_trials['obj_mag'] = pd.to_numeric(visual215_trials['obj_mag'], errors='coerce')    
+            visual215_trials = visual215_trials[visual215_trials['obj_mag'] > 0]
+
+            visual215_trials = visual215_trials.merge(
+                trial_licks,
+                on=['animal_id', 'session', 'trial_idx'],
+                how='inner'
+            )
+            visual215_trials['lick_port'] = pd.to_numeric(visual215_trials['lick_port'], errors='coerce')
+
+            if visual215_trials.empty:
+                continue
+
+            port1_first_lick = (visual215_trials['lick_port'] == 1).sum()
+            port2_first_lick = (visual215_trials['lick_port'] == 2).sum()
+
+
+            rows.append({
+                'animal_id': animal_id,
+                'session': session,
+                'date': session_date,
+                'visual_obj215_trials': len(visual215_trials),
+                'rewards': (visual215_trials['state'] == 'Reward').sum(),
+                'punishments': (visual215_trials['state'] == 'Punish').sum(),
+                'abortions': (visual215_trials['state'] == 'Abort').sum(),
+                'port1_first_lick': port1_first_lick,
+                'port2_first_lick': port2_first_lick,
+                'port1_licks': visual215_trials['lick_port1_count'].sum(),
+                'port2_licks': visual215_trials['lick_port2_count'].sum()
+                }
+                )
+
+        if not rows:
+            return pd.DataFrame()
+
+        return pd.DataFrame(rows)
 
 
     
-
-
-
-
-
 
 
 
