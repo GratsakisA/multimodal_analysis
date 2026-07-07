@@ -599,3 +599,42 @@ def get_session_summary(
 
     return df_session_summary, session_excluded
 
+def change_control_table(setup, **kwargs):
+    '''
+    Keyword arguments must have EXACTLY the same name as the ones in the control table. 
+    When calling the function necessarily specify RP setup as "ef-rpxxx". You can then
+    specify any other attribute included in the control table which you want to modify
+    as a function argument
+    
+    Calling example:
+    
+        change_control_table(setup='ef-rp7', task_idx=75, status='running')
+
+    In this case the keyword arguments are task_idx and status, but any other argument 
+    that is included in the control table e.g start_time, stop_time etc can be used as
+    arguments in the function and thus modified in the control table
+    
+    Note: Options for 'status' argument are:
+    (1) 'running' which leads to task initiation
+    (2) 'stop' which leads to 'ready' screen
+    '''
+    
+    # fetch all control table values in a dict form 
+    current_vars = (exp.Control() & f'setup="{setup}"').fetch(as_dict=True)[0]
+    
+    # VARIABLE CONFIGURATION
+    # Dictionary of the parameters to be changed
+    changes_dict = {attribute:attribute_value for attribute, attribute_value in zip(kwargs.keys(), kwargs.values())}
+
+    # Update current variables
+    # If kwargs are mispelled then they will not be included in current variables
+    for attribute, attribute_val in zip(changes_dict.keys(), changes_dict.values()):
+        current_vars[attribute] = attribute_val
+
+    # Insert 
+    # CONTROL TABLE CHANGES
+    # Apply changes on control table. The parameters 'ignore_extra_fields' & 'replace' are set to True
+    # in order to ignore the rest of the fields in the control table that should not be modified, and also
+    # replace the ones that need to be modified by their new value
+    (exp.Control() & f'setup = "{setup}"').insert1(current_vars, ignore_extra_fields=True, replace=True)
+
