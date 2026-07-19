@@ -61,6 +61,7 @@ def get_condition_distribution(
     visual_215_pct = []
     multi_difficult_pct = []
     visual_difficult_pct = []
+    no_stimulus_trials_pct = []
 
     
     for session in range(from_session, to_session + 1):
@@ -190,6 +191,22 @@ def get_condition_distribution(
         
         multi_difficult_trials['obj_mag'] = pd.to_numeric(multi_difficult_trials['obj_mag'], errors='coerce')
         multi_difficult_trials = multi_difficult_trials[multi_difficult_trials['obj_mag'] > 0]
+
+        # no stimulus conditions = obj_mag = 0 & tone_volume = 0 ---------------------------------------------------------------
+        no_stimulus_trials = (
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag')  
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
+            & 'tone_volume = 0'
+            & key
+            & difficulty_filter
+            & state_filter
+        ).fetch(format='frame').reset_index()
+        
+        no_stimulus_trials['obj_mag'] = pd.to_numeric(no_stimulus_trials['obj_mag'], errors='coerce')
+        no_stimulus_trials = no_stimulus_trials[no_stimulus_trials['obj_mag'] == 0]
     
     
         # ---- replace with real per-session computation ----
@@ -200,8 +217,19 @@ def get_condition_distribution(
         multi215_trials = len(multi215_trials)
         multi_difficult_trials = len(multi_difficult_trials)
         visual_difficult_trials = len(visual_difficult_trials)
-    
-        sizes = np.array([auditory_trials, visual_trials, multimodal_trials, multi215_trials, visual215_trials, multi_difficult_trials, visual_difficult_trials])
+        no_stimulus_trials = len(no_stimulus_trials)
+
+        sizes = np.array([
+            auditory_trials, 
+            visual_trials, 
+            multimodal_trials, 
+            multi215_trials, 
+            visual215_trials, 
+            multi_difficult_trials, 
+            visual_difficult_trials, 
+            no_stimulus_trials
+            ])
+        
         total = sizes.sum()
     
         if total == 0:
@@ -215,6 +243,7 @@ def get_condition_distribution(
         visual_215_pct.append(sizes[4] / total * 100)
         multi_difficult_pct.append(sizes[5] / total * 100)
         visual_difficult_pct.append(sizes[6] / total * 100)
+        no_stimulus_trials_pct.append(sizes[7] / total * 100)
 
     if not sessions:
         print("🚫 No valid data for plotting")
@@ -228,7 +257,8 @@ def get_condition_distribution(
     visual_215_pct = np.array(visual_215_pct)
     multi_difficult_pct = np.array(multi_difficult_pct)
     visual_difficult_pct = np.array(visual_difficult_pct)
-    
+    no_stimulus_trials_pct = np.array(no_stimulus_trials_pct)
+
     y = np.arange(len(sessions))  
     
     plt.figure(figsize=(10, max(4, len(sessions) * 0.3)))
@@ -240,7 +270,8 @@ def get_condition_distribution(
         ('Multimodal_50/50', multimodal_215_pct),
         ('Visual_50/50', visual_215_pct),
         ('Visual_difficult', visual_difficult_pct),
-        ('Multimodal_difficult', multi_difficult_pct)
+        ('Multimodal_difficult', multi_difficult_pct),
+        ('No Stimulus', no_stimulus_trials_pct)
     ]
 
     left = np.zeros(len(sessions))
@@ -288,6 +319,85 @@ def get_condition_distribution(
     plt.grid(alpha=0.3)
     
     plt.show()
+
+# def plot_condition_trial_counts(
+#     animal_id,
+#     from_session,
+#     to_session,
+#     stim,
+#     exp,
+#     manual_exclusion_sessions,
+#     difficulties,
+#     incl_aborts=False
+# ):
+    
+    
+
+#     x = np.arange(len(sessions))
+
+#     conditions = list(condition_counts.keys())
+#     n_conditions = len(conditions)
+
+#     # width of each bar
+#     width = 0.8 / n_conditions
+
+#     plt.figure(figsize=(12, max(5, len(sessions) * 0.4)))
+
+#     colors = [
+#         'tab:blue',
+#         'tab:orange',
+#         'tab:green',
+#         'tab:red',
+#         'tab:purple',
+#         'tab:brown',
+#         'tab:pink',
+#         'grey'
+#     ]
+
+#     for i, condition in enumerate(conditions):
+
+#         offset = (i - n_conditions/2) * width + width/2
+
+#         plt.bar(
+#             x + offset,
+#             condition_counts[condition],
+#             width,
+#             label=condition,
+#             color=colors[i]
+#         )
+
+#     plt.xticks(
+#         x,
+#         sessions,
+#         rotation=45
+#     )
+
+#     plt.xlabel(
+#         "Session ID",
+#         fontsize=12
+#     )
+
+#     plt.ylabel(
+#         "Number of trials",
+#         fontsize=12
+#     )
+
+#     plt.title(
+#         f"Trial Condition Distribution (Animal {animal_id})",
+#         fontsize=12
+#     )
+
+#     plt.legend(
+#         fontsize=10
+#     )
+
+#     plt.grid(
+#         axis='y',
+#         alpha=0.3
+#     )
+
+#     plt.tight_layout()
+#     plt.show()  
 
 def get_scatter_plot_modalities(
     animal_id,
@@ -1569,7 +1679,7 @@ def compute_modality_performance(
 
         key = {'animal_id': animal_id, "session": session}
 
-        auditory_stateonset = (
+        auditory_trials = (
             stim.StimCondition.Trial *
             (stim.Panda.Object).proj('obj_mag') *
             exp.Trial.StateOnset *
@@ -1581,10 +1691,10 @@ def compute_modality_performance(
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
 
-        auditory_stateonset['obj_mag'] = pd.to_numeric(auditory_stateonset['obj_mag'], errors='coerce')
-        auditory_stateonset = auditory_stateonset[auditory_stateonset['obj_mag'] == 0]
+        auditory_trials['obj_mag'] = pd.to_numeric(auditory_trials['obj_mag'], errors='coerce')
+        auditory_trials = auditory_trials[auditory_trials['obj_mag'] == 0]
 
-        visual_stateonset = (
+        visual_trials = (
             stim.StimCondition.Trial *
             (stim.Panda.Object).proj('obj_mag') *
             exp.Trial.StateOnset *
@@ -1592,38 +1702,95 @@ def compute_modality_performance(
             (stim.Tones).proj('tone_volume')
             & 'tone_volume = 0'
             & key
-            & 'obj_id != 215'
+            & 'obj_id NOT IN (214, 215, 216, 217)'
             & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
 
-        visual_stateonset['obj_mag'] = pd.to_numeric(visual_stateonset['obj_mag'], errors='coerce')
-        visual_stateonset = visual_stateonset[visual_stateonset['obj_mag'] > 0]
+        visual_trials['obj_mag'] = pd.to_numeric(visual_trials['obj_mag'], errors='coerce')
+        visual_trials = visual_trials[visual_trials['obj_mag'] > 0]
 
-        multi_stateonset = (
-            stim.StimCondition.Trial *
-            (stim.Panda.Object).proj('obj_mag') *
-            exp.Trial.StateOnset *
-            difficulty *
-            (stim.Tones).proj('tone_volume')
+        multi_trials = (
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag') 
+            * exp.Trial.StateOnset 
+            * difficulty 
+            * (stim.Tones).proj('tone_volume')
             & 'tone_volume > 0'
             & key
-            & 'obj_id != 215'
+            & 'obj_id NOT IN (214, 215, 216, 217)'
             & difficulty_filter
             & 'state in ("Reward", "Punish")'
         ).fetch(format='frame').reset_index()
 
-        multi_stateonset['obj_mag'] = pd.to_numeric(multi_stateonset['obj_mag'], errors='coerce')
-        multi_stateonset = multi_stateonset[multi_stateonset['obj_mag'] > 0]
+        multi_trials['obj_mag'] = pd.to_numeric(multi_trials['obj_mag'], errors='coerce')
+        multi_trials = multi_trials[multi_trials['obj_mag'] > 0]
 
-        if len(auditory_stateonset) == 0 or len(visual_stateonset) == 0 or len(multi_stateonset) == 0:
+        multi_difficult_trials = (
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag')  
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & difficulty_filter
+            & 'obj_id IN (214, 216, 217)'
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        multi_difficult_trials['obj_mag'] = pd.to_numeric(multi_difficult_trials['obj_mag'], errors='coerce')
+        multi_difficult_trials = multi_difficult_trials[multi_difficult_trials['obj_mag'] > 0]
+
+        visual_difficult_trials = (
+            stim.StimCondition.Trial 
+            * (stim.Panda.Object).proj('obj_mag')  
+            * exp.Trial.StateOnset 
+            * difficulty
+            * (stim.Tones).proj('tone_volume') 
+            & 'tone_volume > 0'
+            & key
+            & difficulty_filter
+            & 'obj_id IN (214, 216, 217)'
+            & 'state in ("Reward", "Punish")'
+        ).fetch(format='frame').reset_index()
+        
+        visual_difficult_trials['obj_mag'] = pd.to_numeric(visual_difficult_trials['obj_mag'], errors='coerce')
+        visual_difficult_trials = visual_difficult_trials[visual_difficult_trials['obj_mag'] > 0]
+
+
+        if (
+            len(auditory_trials) == 0 and
+            len(visual_trials) == 0 and
+            len(multi_trials) == 0 and
+            len(multi_difficult_trials) == 0 and
+            len(visual_difficult_trials) == 0
+        ):
             continue
 
         perf_per_condition.append({
             'session': session,
-            'auditory_perf': round((auditory_stateonset['state'] == 'Reward').mean(),2),
-            'visual_perf': round((visual_stateonset['state'] == 'Reward').mean(), 2),
-            'multi_perf': round((multi_stateonset['state'] == 'Reward').mean(), 2),
+            'auditory_perf': (
+                round((auditory_trials['state'] == 'Reward').mean(), 2)
+                if len(auditory_trials) > 0 else np.nan
+            ),
+            'visual_perf': (
+                round((visual_trials['state'] == 'Reward').mean(), 2)
+                if len(visual_trials) > 0 else np.nan
+            ),
+            'multi_perf': (
+                round((multi_trials['state'] == 'Reward').mean(), 2)
+                if len(multi_trials) > 0 else np.nan
+            ),
+            'multi_difficult_perf': (
+                round((multi_difficult_trials['state'] == 'Reward').mean(), 2)
+                if len(multi_difficult_trials) > 0 else np.nan
+            ),
+            'visual_difficult_perf': (
+                round((visual_difficult_trials['state'] == 'Reward').mean(), 2)
+                if len(visual_difficult_trials) > 0 else np.nan
+            )
+
         })
 
     return pd.DataFrame(perf_per_condition)
@@ -1655,31 +1822,34 @@ def get_linePlot_per_modality_across_sessions(
     perf_per_modality = perf_per_modality.sort_values('session').copy()
     sessions = perf_per_modality['session'].tolist()
     perf_per_modality['session_idx'] = range(len(perf_per_modality))
+    perf_long = perf_per_modality.melt(
+        id_vars=['session', 'session_idx'],
+        value_vars=['auditory_perf', 'visual_perf', 'multi_perf', 'multi_difficult_perf', 'visual_difficult_perf'],
+        var_name='modality',
+        value_name='performance'
+    ).dropna(subset=['performance'])
+
+    perf_long['modality'] = perf_long['modality'].map({
+        'auditory_perf': 'Auditory',
+        'visual_perf': 'Visual',
+        'multi_perf': 'Multimodal',
+        'multi_difficult_perf': 'Multimodal Difficult',
+        'visual_difficult_perf': 'Visual Difficult'
+    })
+
+    if perf_long.empty:
+        print(" 🚫 No modality performance data available for plotting.")
+        return
 
     plt.figure(figsize=(max(8, len(sessions) * 1.2), 5))
 
     sns.lineplot(
-        data=perf_per_modality, 
-        x='session_idx', 
-        y='auditory_perf', 
-        marker='o', 
-        label='Auditory'
-        )
-    
-    sns.lineplot(
-        data=perf_per_modality, 
-        x='session_idx', 
-        y='visual_perf', 
-        marker='o', 
-        label='Visual')
-    
-    sns.lineplot(
-        data=perf_per_modality, 
-        x='session_idx', 
-        y='multi_perf', 
-        marker='o', 
-        label='Multimodal'
-        )
+        data=perf_long,
+        x='session_idx',
+        y='performance',
+        hue='modality',
+        marker='o'
+    )
     
     plt.title(
         f'Performance across sessions in each modality\n(Animal: {animal_id}, Sessions: {from_session}-{to_session})',
@@ -2167,11 +2337,7 @@ class obj215_trials:
         if not rows:
             return pd.DataFrame()
 
-        return pd.DataFrame(rows)
-
-
-    
-
+        return pd.DataFrame(rows)    
 
 
 
