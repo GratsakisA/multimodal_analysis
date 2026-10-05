@@ -112,7 +112,10 @@ def extract_aim(markdown_cells: list[str]) -> str:
         if match:
             return match.group(1).strip()
 
-    return "No `## Aim` section was found."
+    return (
+        "The general aim of this notebook should be described "
+        "in an `## Aim` section."
+    )
 
 
 def render_structure(
@@ -169,8 +172,52 @@ def format_signature(
     return f"{node.name}({', '.join(arguments)})"
 
 
+def extract_call_examples(
+    cells: list[dict],
+    function_name: str,
+) -> list[str]:
+    """Extract short notebook examples using a function."""
+    examples = []
+
+    for cell in cells:
+        if cell.get("cell_type") != "code":
+            continue
+
+        source = "".join(cell.get("source", []))
+
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            continue
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+
+            called_name = None
+
+            if isinstance(node.func, ast.Name):
+                called_name = node.func.id
+            elif isinstance(node.func, ast.Attribute):
+                called_name = node.func.attr
+
+            if called_name != function_name:
+                continue
+
+            lines = source.strip().splitlines()
+
+            if source.strip() and source.strip() not in examples:
+                examples.append(source.strip())
+
+            if len(examples) >= 2:
+                return examples
+
+    return examples
+
+
 def format_function_documentation(
     function_name: str,
+    cells: list[dict],
 ) -> str:
     """Create concise documentation for a function."""
     result = find_function(function_name)
@@ -181,9 +228,9 @@ def format_function_documentation(
     file_path, node = result
 
     docstring = ast.get_docstring(node)
-
     relative_path = file_path.relative_to(ROOT)
     signature = format_signature(node)
+    examples = extract_call_examples(cells, function_name)
 
     lines = [
         f"### `{signature}`",
@@ -195,10 +242,59 @@ def format_function_documentation(
     if docstring:
         lines.extend(
             [
-                docstring,
+                f"**Purpose:** {docstring}",
                 "",
             ]
         )
+    else:
+        lines.extend(
+            [
+                "**Purpose:** No docstring is available.",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "**Usage:**",
+            "",
+            f"Use `{function_name}()` in the notebook to perform "
+            "this operation.",
+            "",
+        ]
+    )
+
+    if examples:
+        lines.extend(
+            [
+                "**Example:**",
+                "",
+                "```python",
+                examples[0],
+                "```",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "**Example:**",
+                "",
+                "No example was detected in the notebook.",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "**Output:**",
+            "",
+            "The function returns the result described by its "
+            "implementation/docstring. See the function definition "
+            "for details.",
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -223,13 +319,25 @@ def generate_documentation(
             f"(../notebooks/{notebook_path.name})"
         ),
         "",
-        "## Aim",
+        "## General aim",
         "",
         aim,
+        "",
+        (
+            "This notebook is part of the behavioral/multimodal "
+            "analysis workflow. It is used to process, inspect, "
+            "or analyze experimental data according to the task "
+            "described above."
+        ),
         "",
         "## Notebook structure",
         "",
         render_structure(headings),
+        "",
+        (
+            "The sections above follow the order in which the "
+            "analysis is performed in the notebook."
+        ),
         "",
         "## Functions used",
         "",
@@ -242,11 +350,17 @@ def generate_documentation(
     else:
         for function_name in sorted(functions):
             documentation = format_function_documentation(
-                function_name
+                function_name,
+                cells,
             )
 
             if documentation:
-                lines.append(documentation)
+                lines.extend(
+                    [
+                        documentation,
+                        "",
+                    ]
+                )
 
     return "\n".join(lines).strip() + "\n"
 
@@ -275,20 +389,15 @@ def get_changed_files() -> list[Path]:
 def get_affected_notebooks() -> set[Path]:
     """Determine which notebooks require documentation updates."""
     changed_files = get_changed_files()
-
     affected_notebooks = set()
 
     for path in changed_files:
-        # A changed notebook always requires its documentation
-        # to be regenerated.
         if (
             path.suffix == ".ipynb"
             and NOTEBOOKS_DIR in path.parents
         ):
             affected_notebooks.add(path)
 
-    # Changes to package code may affect documentation of notebooks
-    # that use those functions.
     package_changed = any(
         path.suffix == ".py"
         and PACKAGE_DIR in path.parents
