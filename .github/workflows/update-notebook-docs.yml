@@ -1,0 +1,58 @@
+name: Update notebook documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "notebooks/**/*.ipynb"
+      - "src/multimodal_analysis/**/*.py"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Generate notebook documentation
+        run: |
+          python .github/scripts/generate_notebook_docs.py
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: docs/update-notebook-docs
+          delete-branch: true
+          title: "docs: update notebook documentation"
+          commit-message: "docs: update notebook documentation"
+          body: |
+            ## Summary
+
+            Automatically generated documentation
+            for notebooks affected by recent changes.
+
+            Please review the generated documentation
+            before merging.
+
+            ## Review checklist
+
+            - [ ] Notebook aim is correct
+            - [ ] Notebook structure is correct
+            - [ ] Functions are correctly identified
+            - [ ] Function descriptions are clear
+            - [ ] Usage is clear
+            - [ ] Outputs are correctly described
+          labels: documentation
