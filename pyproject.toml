@@ -5,7 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "multimodal-analysis"
 version = "0.1.0"
+author = [
+{name = "Anastasios Gratsakis", email = "gratsakisanastasios@gmail.com"}
+]
 description = "Behavioral experiment analysis of multimodal tasks"
+readme = "README.md"
+# license = {text="MIT"}
+
+keywords = ["neuroscience", "audiovisual", "multimodal", "behavior", "data-analysis", "visualization", "ethopy"]
+
 
 dependencies = [
     "datajoint>=0.13.0",
@@ -16,4 +24,4 @@ dependencies = [
 ]
 
 [tool.setuptools.package-dir]
-"" = "src"
+where = ["src"]
