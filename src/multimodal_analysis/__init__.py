@@ -27,44 +27,31 @@ Quick Start:
     ... }
     >>> 
     >>> plot_visual_performance_per_object(key, stim, exp)
-
-For more information, visit: https://github.com/yourname/repository_name
 """
 
 __version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__author__ = "Anastasios Gratsakis"
+__email__ = "gratsakisanastasios@gmail.com"
 __license__ = "MIT"
 
-# ============================================================================
-# DATABASE IMPORTS
-# ============================================================================
 
+# Database imports
 from .db.config import get_schemas, SCHEMATA
 
-# ============================================================================
-# STIMULUS CONFIGURATION IMPORTS
-# ============================================================================
-
-from .stimuli.objects import DEFAULT_OBJECT_IDS, OBJECT_ALIASES
+# Stimulus configuration imports
+from .stimuli.objects import default_object_ids, object_aliases
 from .stimuli.tones import (
-    TONE_FREQUENCIES,
-    TONE_FREQUENCY_NAMES,
-    AUDITORY_TRIAL_CRITERIA,
-    MULTIMODAL_AUDITORY_CRITERIA
+    tone_pulse_frequencies,
+    tone_pulse_freq_names,
+    auditory_trial_criteria,
+    multimodal_auditory_criteria
 )
 
-# ============================================================================
-# UTILITY IMPORTS
-# ============================================================================
-
+# Utility imports
 from .utils.validators import validate_key, get_difficulties
 from .utils.queries import fetch_sessions
 
-# ============================================================================
-# DATA PROCESSING IMPORTS
-# ============================================================================
-
+# Data Processing Imports
 from .data.processors import process_visual_object, process_multimodal_object
 from .data.fetchers import fetch_visual_data, fetch_multimodal_data
 from .data.computers import (
@@ -72,10 +59,7 @@ from .data.computers import (
     compute_modality_performance
 )
 
-# ============================================================================
-# PLOTTING IMPORTS
-# ============================================================================
-
+# Plotting imports
 from .plots.visual_trials import (
     get_visual_performance_summary,
     plot_visual_performance_per_object
@@ -102,10 +86,7 @@ from .plots.responses import (
     plot_response_counts
 )
 
-# ============================================================================
-# PUBLIC API
-# ============================================================================
-
+# Public API
 __all__ = [
     # Version and metadata
     '__version__',
@@ -118,12 +99,12 @@ __all__ = [
     'SCHEMATA',
     
     # Stimuli
-    'DEFAULT_OBJECT_IDS',
-    'OBJECT_ALIASES',
-    'TONE_FREQUENCIES',
-    'TONE_FREQUENCY_NAMES',
-    'AUDITORY_TRIAL_CRITERIA',
-    'MULTIMODAL_AUDITORY_CRITERIA',
+    'default_object_ids',
+    'object_aliases',
+    'tone_pulse_frequencies',
+    'tone_pulse_freq_names',
+    'auditory_trial_criteria',
+    'multimodal_auditory_criteria',
     
     # Utils
     'validate_key',

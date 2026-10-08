@@ -47,3 +47,16 @@ def get_schemas():
             create_schema=True
         )
     return schemata
+
+def get_schema_modules():
+    """Initialize and return all schemas as individual modules."""
+    schemas = get_schemas()
+
+    return (
+        schemas["exp"],
+        schemas["stim"],
+        schemas["beh"],
+        schemas["inter"],
+        schemas["rec"],
+        schemas["mice"],
+    )
