@@ -7,14 +7,14 @@ used in auditory and multimodal trials.
 
 # Tone pulse frequency configuration
 
-TONE_FREQUENCIES = [0, 100]
+tone_pulse_frequencies = [0, 100]
 """List of tone pulse frequencies used in experiments.
 
-- 0 Hz: Continuous tone
+- 0 Hz: Continuous tone 
 - 100 Hz: Pulsed tone
 """
 
-TONE_FREQUENCY_NAMES = {
+tone_pulse_freq_names = {
     0: 'Continuous tone',
     100: 'Pulsed tone'
 }
@@ -23,12 +23,12 @@ TONE_FREQUENCY_NAMES = {
 
 # Tone volume configuration 
 
-MIN_AUDIBLE_VOLUME = 0
+min_auditory_volume = 0
 """Minimum volume threshold that constitutes auditory stimulation."""
 
 # Auditory trials definitions
 
-AUDITORY_TRIAL_CRITERIA = {
+auditory_trial_criteria = {
     'tone_volume': '> 0',
     'obj_mag': '== 0'
 }
@@ -39,7 +39,7 @@ Auditory trials have:
 - obj_mag == 0 (no visual stimulus)
 """
 
-MULTIMODAL_AUDITORY_CRITERIA = {
+multimodal_auditory_criteria = {
     'tone_volume': '> 0',
     'obj_mag': '> 0'
 }

@@ -7,10 +7,10 @@ identifiers used throughout the project for visual and multimodal trials.
 
 # Object configuration
 
-DEFAULT_OBJECT_IDS = [211, 212, 213, 214, 215, 216, 217, 218, 219]
+default_object_ids = [211, 212, 213, 214, 215, 216, 217, 218, 219]
 """List of standard visual object IDs used in experiments."""
 
-OBJECT_ALIASES = {
+object_aliases = {
     211: [211, 1],      
     219: [219, 2]       
 }
