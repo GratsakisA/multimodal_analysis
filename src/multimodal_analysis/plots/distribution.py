@@ -12,50 +12,33 @@ from IPython.display import display
 from ..utils.validators import validate_key, get_difficulties
 from ..utils.queries import fetch_sessions
 
-
-def get_condition_distribution_data(animal_id, from_session, to_session, stim, 
-                                    exp, excluded_sessions, difficulties, 
-                                    incl_aborts=False):
+def get_condition_distribution_data(key, stim, exp, incl_aborts=False):
     """Fetch trial distribution data across conditions.
     
-    Counts trials in each stimulus condition (auditory, visual, multimodal,
-    difficult variants, etc.) for each session.
+    Retrieves trial counts for each condition from the database for the 
+    specified animal and session range.
     
     Args:
-        animal_id (str): Animal identifier.
-        from_session (int): Start session number (inclusive).
-        to_session (int): End session number (inclusive).
-        stim: DataJoint stimuli schema.
-        exp: DataJoint experiments schema.
-        excluded_sessions (list or set): Session numbers to exclude.
-        difficulties (int or list): Difficulty level(s) to include.
-        incl_aborts (bool, optional): Include abort trials in state filter.
-            Defaults to False (only Reward and Punish).
+        key (dict): Analysis key with keys:
+            - animal_id (str): Animal identifier
+            - sessions (tuple): (from_session, to_session)
+            - difficulties (list): Difficulty levels to include
+            - excluded_sessions (set): Sessions to exclude
+        stim: DataJoint stimuli schema
+        exp: DataJoint experiments schema
+        incl_aborts (bool): Include abort trials. Default is False.
         
     Returns:
-        dict or None: Dictionary with keys:
-            - animal_id: Animal identifier
-            - incl_aborts: Whether aborts were included
-            - sessions: Array of session numbers
-            - auditory: Array of auditory trial counts
-            - visual: Array of visual trial counts
-            - multimodal: Array of multimodal trial counts
-            - multimodal_215: Array of multimodal object 215 counts
-            - visual_215: Array of visual object 215 counts
-            - multi_difficult: Array of multimodal difficult counts
-            - visual_difficult: Array of visual difficult counts
-            - no_stimulus: Array of no-stimulus trial counts
-            
-            Returns None if no valid data found.
-            
-    Example:
-        >>> data = get_condition_distribution_data(
-        ...     'mouse_1', 1, 20, stim, exp, set(), [1, 2], incl_aborts=False
-        ... )
-        >>> print(data['sessions'])
-        >>> print(data['auditory'])
+        dict: Dictionary with keys 'animal_id', 'sessions', 'auditory', 
+            'visual', 'multimodal', etc. Returns None if no valid data.
+        
+    Raises:
+        ValueError: If animal_id not found in database.
     """
-    difficulties = get_difficulties({'difficulties': difficulties})
+    animal_id = key['animal_id']
+    from_s, to_s = key['sessions']
+    excluded_sessions = key['excluded_sessions']
+    difficulties = key['difficulties']
     
     if difficulties is None:
         return None
@@ -82,7 +65,7 @@ def get_condition_distribution_data(animal_id, from_session, to_session, stim,
     visual_difficult_counts = []
     no_stimulus_counts = []
     
-    for session in range(from_session, to_session + 1):
+    for session in range(from_s, to_s + 1):
         if session not in valid_sessions:
             continue
         
@@ -309,42 +292,36 @@ def get_condition_distribution_data(animal_id, from_session, to_session, stim,
     }
 
 
-def plot_condition_trial_distribution(animal_id, from_session, to_session, stim, 
-                                     exp, excluded_sessions, difficulties, 
-                                     incl_aborts=False):
+def plot_condition_trial_distribution(key, stim, exp, incl_aborts=False):
     """Plot trial counts across stimulus conditions.
     
     Creates a grouped bar plot showing the number of trials per condition
-    for each session. Active conditions are displayed with separate bars
-    within each session.
+    for each session. Active conditions are displayed with separate bars.
     
     Args:
-        animal_id (str): Animal identifier.
-        from_session (int): Start session number (inclusive).
-        to_session (int): End session number (inclusive).
+        key (dict): Analysis key with keys:
+            - animal_id (str): Animal identifier
+            - sessions (tuple): (from_session, to_session)
+            - difficulties (list): Difficulty levels to include
+            - excluded_sessions (set): Sessions to exclude
         stim: DataJoint stimuli schema.
         exp: DataJoint experiments schema.
-        excluded_sessions (list or set): Session numbers to exclude.
-        difficulties (int or list): Difficulty level(s) to include.
         incl_aborts (bool, optional): Include abort trials. Defaults to False.
         
     Returns:
         matplotlib.axes.Axes: The axes object containing the plot.
         
     Example:
-        >>> ax = plot_condition_trial_distribution(
-        ...     'mouse_1', 1, 20, stim, exp, set(), [1, 2], incl_aborts=False
-        ... )
+        >>> key = {'animal_id': 'mouse_1', 'sessions': (1, 20), ...}
+        >>> ax = plot_condition_trial_distribution(key, stim, exp)
         >>> plt.show()
     """
-    data = get_condition_distribution_data(
-        animal_id, from_session, to_session, stim, exp,
-        excluded_sessions, difficulties, incl_aborts
-    )
+    data = get_condition_distribution_data(key, stim, exp, incl_aborts)
 
     if data is None:
         return None
 
+    animal_id = key['animal_id'] 
     sessions = data["sessions"]
 
     conditions = {
@@ -420,41 +397,37 @@ def plot_condition_trial_distribution(animal_id, from_session, to_session, stim,
     return ax
 
 
-def plot_condition_distribution_percentage(animal_id, from_session, to_session, 
-                                          stim, exp, excluded_sessions, 
-                                          difficulties, incl_aborts=False):
+def plot_condition_distribution_percentage(key, stim, exp, incl_aborts=False):
     """Plot trial distribution as percentage across conditions.
     
     Creates a horizontal stacked bar chart showing the percentage of trials
     in each condition for each session.
     
     Args:
-        animal_id (str): Animal identifier.
-        from_session (int): Start session number (inclusive).
-        to_session (int): End session number (inclusive).
+        key (dict): Analysis key with keys:
+            - animal_id (str): Animal identifier
+            - sessions (tuple): (from_session, to_session)
+            - difficulties (list): Difficulty levels to include
+            - excluded_sessions (set): Sessions to exclude
         stim: DataJoint stimuli schema.
         exp: DataJoint experiments schema.
-        excluded_sessions (list or set): Session numbers to exclude.
-        difficulties (int or list): Difficulty level(s) to include.
         incl_aborts (bool, optional): Include abort trials. Defaults to False.
         
     Returns:
-        None: Displays plot using plt.show().
+        None: Displays plot using matplotlib.
         
     Example:
-        >>> plot_condition_distribution_percentage(
-        ...     'mouse_1', 1, 20, stim, exp, set(), [1, 2]
-        ... )
+        >>> key = {'animal_id': 'mouse_1', 'sessions': (1, 20), ...}
+        >>> plot_condition_distribution_percentage(key, stim, exp)
     """
-    data = get_condition_distribution_data(
-        animal_id, from_session, to_session, stim, exp,
-        excluded_sessions, difficulties, incl_aborts
-    )
+    data = get_condition_distribution_data(key, stim, exp, incl_aborts)
 
     if data is None:
         return
 
+    animal_id = key['animal_id']
     sessions = data["sessions"]
+    
     y = np.arange(len(sessions))
     
     plt.figure(figsize=(10, max(4, len(sessions) * 0.3)))
@@ -511,3 +484,284 @@ def plot_condition_distribution_percentage(animal_id, from_session, to_session,
     plt.grid(alpha=0.3)
     
     plt.show()
+
+def get_object_distribution_trials(key, stim, exp, incl_aborts=False):
+    """Return visual/audiovisual trial counts per object and session.
+
+    Each object has one column containing 'visual / audiovisual' counts.
+    Missing objects are represented as '0 / 0'.
+
+    Args:
+        key (dict): Analysis configuration.
+        stim: DataJoint stimuli schema.
+        exp: DataJoint experiment schema.
+        incl_aborts (bool): Whether to include aborted trials.
+
+    Returns:
+        pd.DataFrame: One row per session and one column per object.
+    """
+    data = get_object_distribution_data(
+        key,
+        stim,
+        exp,
+        incl_aborts=incl_aborts,
+    )
+
+    if data is None or data.empty:
+        return pd.DataFrame(columns=["session"])
+
+    # Pivot visual and audiovisual trial counts separately.
+    visual = data.pivot_table(
+        index="session",
+        columns="obj_id",
+        values="visual",
+        aggfunc="sum",
+        fill_value=0,
+    )
+
+    audiovisual = data.pivot_table(
+        index="session",
+        columns="obj_id",
+        values="audiovisual",
+        aggfunc="sum",
+        fill_value=0,
+    )
+
+    # Ensure both tables contain the same object IDs.
+    object_ids = sorted(
+        set(visual.columns) | set(audiovisual.columns)
+    )
+
+    visual = visual.reindex(columns=object_ids, fill_value=0)
+    audiovisual = audiovisual.reindex(columns=object_ids, fill_value=0)
+
+    # Combine counts into one string per object.
+    result = pd.DataFrame(index=visual.index)
+
+    for obj_id in object_ids:
+        result[f"obj{obj_id}"] = (
+            visual[obj_id].astype(int).astype(str)
+            + " / "
+            + audiovisual[obj_id].astype(int).astype(str)
+        )
+
+    return (
+        result.reset_index()
+        .sort_values("session")
+        .reset_index(drop=True)
+    )
+
+# def get_object_distribution_data(key, stim, exp, incl_aborts=False):
+#     """Fetch the number of trials for each presented object per session.
+
+#     Args:
+#         key (dict): Analysis key with keys:
+#             - animal_id (int): Animal identifier.
+#             - sessions (tuple): (from_session, to_session).
+#             - difficulties (list): Difficulty levels to include.
+#             - excluded_sessions (set): Sessions to exclude.
+#         stim: DataJoint stimuli schema.
+#         exp: DataJoint experiments schema.
+#         incl_aborts (bool): Include abort trials.
+
+#     Returns:
+#         pandas.DataFrame: Trial counts with columns:
+#             - session
+#             - obj_id
+#             - n_trials
+#         Returns None if no valid data are found.
+#     """
+#     animal_id = key["animal_id"]
+#     from_s, to_s = key["sessions"]
+#     difficulties = key["difficulties"]
+#     excluded_sessions = key["excluded_sessions"]
+
+#     if difficulties is None:
+#         return None
+
+#     difficulty_filter = [{"difficulty": d} for d in difficulties]
+
+#     difficulty = (
+#         exp.Condition.MatchPort()
+#         * exp.Trial()
+#     ).proj("difficulty")
+
+#     state_filter = (
+#         'state in ("Reward", "Punish", "Abort")'
+#         if incl_aborts
+#         else 'state in ("Reward", "Punish")'
+#     )
+
+#     # Find valid sessions for the selected animal.
+#     restr = exp.Session() & {"animal_id": animal_id}
+#     valid_sessions = (
+#         restr - exp.Session.Excluded
+#     ).fetch("session")
+
+#     records = []
+
+#     for session in range(from_s, to_s + 1):
+
+#         if session not in valid_sessions:
+#             continue
+
+#         if session in excluded_sessions:
+#             continue
+
+#         session_key = {
+#             "animal_id": animal_id,
+#             "session": session,
+#         }
+
+#         trials = (
+#             stim.StimCondition.Trial
+#             * (stim.Panda.Object).proj("obj_mag")
+#             * exp.Trial.StateOnset
+#             * difficulty
+#             & difficulty_filter
+#             & session_key
+#             & state_filter
+#         ).fetch(format="frame").reset_index()
+
+#         if trials.empty:
+#             continue
+
+#         # Keep only actual objects.
+#         trials["obj_id"] = pd.to_numeric(
+#             trials["obj_id"],
+#             errors="coerce",
+#         )
+
+#         trials = trials.dropna(subset=["obj_id"])
+
+#         if trials.empty:
+#             continue
+
+#         # Count trials for each object.
+#         counts = (
+#             trials.groupby("obj_id")
+#             .size()
+#             .reset_index(name="n_trials")
+#         )
+
+#         counts["session"] = session
+
+#         records.append(counts)
+
+#     if not records:
+#         print("🚫 No valid object data")
+#         return None
+
+#     data = pd.concat(records, ignore_index=True)
+
+#     return data[["session", "obj_id", "n_trials"]]
+
+
+# def plot_object_distribution_object_trials(
+#     key,
+#     stim,
+#     exp,
+#     incl_aborts=False,
+# ):
+#     """Plot the number of trials for each object across sessions.
+
+#     Each object has a consistent position and color across sessions.
+#     Objects that were not presented in a session are not plotted.
+
+#     Args:
+#         key (dict): Analysis key.
+#         stim: DataJoint stimuli schema.
+#         exp: DataJoint experiments schema.
+#         incl_aborts (bool): Include abort trials. Defaults to False.
+
+#     Returns:
+#         matplotlib.axes.Axes: The axes object containing the plot.
+#     """
+#     data = get_object_distribution_data(
+#         key,
+#         stim,
+#         exp,
+#         incl_aborts=incl_aborts,
+#     )
+
+#     if data is None:
+#         return None
+
+#     sessions = sorted(data["session"].unique())
+#     object_ids = sorted(data["obj_id"].unique())
+
+#     fig, ax = plt.subplots(
+#         figsize=(12, 5),
+#     )
+
+#     x = np.arange(len(sessions))
+
+#     # Consistent colors for objects across all sessions.
+#     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+#     n_objects = len(object_ids)
+#     group_width = 0.8
+#     width = group_width / n_objects
+
+#     for object_idx, obj_id in enumerate(object_ids):
+
+#         object_data = data[data["obj_id"] == obj_id]
+
+#         values = []
+
+#         for session in sessions:
+#             match = object_data[
+#                 object_data["session"] == session
+#             ]
+
+#             if match.empty:
+#                 values.append(0)
+#             else:
+#                 values.append(
+#                     match["n_trials"].iloc[0]
+#                 )
+
+#         offset = (
+#             object_idx - (n_objects - 1) / 2
+#         ) * width
+
+#         ax.bar(
+#             x + offset,
+#             values,
+#             width=width,
+#             label=f"Object {int(obj_id)}",
+#             color=colors[object_idx % len(colors)],
+#         )
+
+#     ax.set_xticks(x)
+#     ax.set_xticklabels(sessions)
+
+#     ax.set_xlabel("Session", fontsize=12)
+#     ax.set_ylabel("Number of trials", fontsize=12)
+
+    # animal_id = key["animal_id"]
+
+    # title = (
+    #     f"Object Trial Distribution "
+    #     f"(Animal {animal_id}) - valid trials only"
+    #     if not incl_aborts
+    #     else
+    #     f"Object Trial Distribution "
+    #     f"(Animal {animal_id}) - valid + abort trials"
+    # )
+
+    # ax.set_title(title, fontsize=12)
+
+    # ax.legend(
+    #     bbox_to_anchor=(1.02, 1),
+    #     loc="upper left",
+    # )
+
+    # ax.grid(
+    #     axis="y",
+    #     alpha=0.3,
+    # )
+
+    # plt.tight_layout()
+
+    # return ax
