@@ -52,8 +52,14 @@ from .utils.validators import validate_key, get_difficulties
 from .utils.queries import fetch_sessions
 
 # Data Processing Imports
-from .data.processors import process_visual_object, process_multimodal_object
-from .data.fetchers import fetch_visual_data, fetch_multimodal_data
+from .data.processors import ( 
+    process_visual_object, 
+    process_multimodal_object,
+)
+from .data.fetchers import (
+    fetch_visual_data, 
+    fetch_multimodal_data,
+)
 from .data.computers import (
     compute_auditory_performance_summary,
     compute_modality_performance
@@ -75,8 +81,14 @@ from .plots.multimodal_trials import (
 from .plots.distribution import (
     get_condition_distribution_data,
     plot_condition_trial_distribution,
-    plot_condition_distribution_percentage
+    plot_condition_distribution_percentage,
+    get_object_distribution_trials,
+    # 'plot_object_distribution_object_trials',
+    # 'get_object_distribution_data',
 )
+
+from .plots.tables import highlight_object_trials_distribution_table
+
 from .plots.modality import (
     get_linePlot_per_modality_across_sessions,
     get_scatter_plot_modalities
@@ -139,6 +151,12 @@ __all__ = [
     'get_condition_distribution_data',
     'plot_condition_trial_distribution',
     'plot_condition_distribution_percentage',
+    'get_object_distribution_trials',
+    # 'plot_object_distribution_object_trials',
+    # 'get_object_distribution_data',
+
+    # Plots - Tables
+    'highlight_object_trials_distribution_table',
     
     # Plots - Modality
     'get_linePlot_per_modality_across_sessions',
