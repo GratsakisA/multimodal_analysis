@@ -485,6 +485,171 @@ def plot_condition_distribution_percentage(key, stim, exp, incl_aborts=False):
     
     plt.show()
 
+def get_object_distribution_data(
+    key,
+    stim,
+    exp,
+    incl_aborts=False,
+):
+    """Fetch visual and audiovisual trial counts per object and session.
+
+    Visual trials have obj_mag > 0 and tone_volume = 0.
+    Audiovisual trials have obj_mag > 0 and tone_volume > 0.
+
+    Args:
+        key (dict): Analysis configuration containing:
+            - animal_id (int): Animal identifier.
+            - sessions (tuple): Inclusive (from_session, to_session) range.
+            - difficulties (list): Difficulty levels to include.
+            - excluded_sessions (set): Sessions to exclude.
+        stim: DataJoint stimuli schema.
+        exp: DataJoint experiments schema.
+        incl_aborts (bool): Whether to include aborted trials.
+
+    Returns:
+        pandas.DataFrame: Trial counts with columns:
+            - session: Session ID.
+            - obj_id: Object identifier.
+            - visual: Number of visual trials.
+            - audiovisual: Number of audiovisual trials.
+        Returns None if no valid data are found.
+    """
+    animal_id = key["animal_id"]
+    from_s, to_s = key["sessions"]
+    difficulties = key["difficulties"]
+    excluded_sessions = set(key["excluded_sessions"])
+
+    if difficulties is None or not difficulties:
+        return None
+
+    difficulty_filter = [
+        {"difficulty": d}
+        for d in difficulties
+    ]
+
+    difficulty = (
+        exp.Condition.MatchPort()
+        * exp.Trial()
+    ).proj("difficulty")
+
+    state_filter = (
+        'state in ("Reward", "Punish", "Abort")'
+        if incl_aborts
+        else 'state in ("Reward", "Punish")'
+    )
+
+    # Find valid sessions for the selected animal.
+    restr = exp.Session() & {"animal_id": animal_id}
+
+    valid_sessions = set(
+        (restr - exp.Session.Excluded).fetch("session")
+    )
+
+    records = []
+
+    for session in range(from_s, to_s + 1):
+        if session not in valid_sessions:
+            continue
+
+        if session in excluded_sessions:
+            continue
+
+        session_key = {
+            "animal_id": animal_id,
+            "session": session,
+        }
+
+        # Fetch trials with object magnitude and tone volume.
+        trials = (
+            stim.StimCondition.Trial
+            * stim.Panda.Object.proj("obj_mag")
+            * exp.Trial.StateOnset
+            * difficulty
+            * stim.Tones.proj("tone_volume")
+            & difficulty_filter
+            & session_key
+            & state_filter
+        ).fetch(format="frame").reset_index()
+
+        if trials.empty:
+            continue
+
+        # Convert stimulus properties to numeric values.
+        trials["obj_id"] = pd.to_numeric(
+            trials["obj_id"],
+            errors="coerce",
+        )
+        trials["obj_mag"] = pd.to_numeric(
+            trials["obj_mag"],
+            errors="coerce",
+        )
+        trials["tone_volume"] = pd.to_numeric(
+            trials["tone_volume"],
+            errors="coerce",
+        )
+
+        trials = trials.dropna(
+            subset=["obj_id", "obj_mag", "tone_volume"]
+        )
+
+        # Keep only trials containing a visual object.
+        trials = trials[trials["obj_mag"] > 0]
+
+        if trials.empty:
+            continue
+
+        # VISUAL: obj_mag > 0 and tone_volume = 0.
+        visual_trials = trials[
+            trials["tone_volume"] == 0
+        ]
+
+        visual_counts = (
+            visual_trials.groupby("obj_id")
+            .size()
+            .rename("visual")
+        )
+
+        # AUDIOVISUAL: obj_mag > 0 and tone_volume > 0.
+        audiovisual_trials = trials[
+            trials["tone_volume"] > 0
+        ]
+
+        audiovisual_counts = (
+            audiovisual_trials.groupby("obj_id")
+            .size()
+            .rename("audiovisual")
+        )
+
+        # Combine counts for each object.
+        counts = pd.concat(
+            [visual_counts, audiovisual_counts],
+            axis=1,
+        ).fillna(0)
+
+        if counts.empty:
+            continue
+
+        counts = counts.astype(int).reset_index()
+        counts["session"] = session
+
+        records.append(
+            counts[
+                ["session", "obj_id", "visual", "audiovisual"]
+            ]
+        )
+
+    if not records:
+        print("🚫 No valid object data")
+        return None
+
+    return (
+        pd.concat(records, ignore_index=True)
+        [["session", "obj_id", "visual", "audiovisual"]]
+        .sort_values(["session", "obj_id"])
+        .reset_index(drop=True)
+    )
+
+
 def get_object_distribution_trials(key, stim, exp, incl_aborts=False):
     """Return visual/audiovisual trial counts per object and session.
 

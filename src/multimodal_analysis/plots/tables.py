@@ -5,27 +5,33 @@ pandas DataFrames, including visual and audiovisual trial distributions.
 """
 
 def highlight_object_trials_distribution_table(value):
-    """Highlight object trial counts according to modality availability.
+    """Highlight cells according to modality-specific trial availability.
 
     Args:
-        value: Cell value formatted as 'visual / audiovisual'.
+        value (str): Cell value formatted as 'visual / audiovisual'.
 
     Returns:
-        str: CSS styling for the table cell, or an empty string if no
-            highlighting is required.
+        str: CSS background-color styling, or an empty string when
+        highlighting is not required or the value is invalid.
     """
     if not isinstance(value, str):
         return ""
 
-    visual, audiovisual = map(int, value.split(" / "))
+    try:
+        visual, audiovisual = map(
+            int,
+            value.split(" / "),
+        )
+    except ValueError:
+        return ""
 
-    # Neither modality was presented: no highlighting.
+    if visual < 0 or audiovisual < 0:
+        return ""
+
     if visual == 0 and audiovisual == 0:
         return ""
 
-    # The object was presented in only one modality.
     if visual == 0 or audiovisual == 0:
         return "background-color: orange"
 
-    # The object was presented in both modalities.
     return "background-color: lightgreen"
