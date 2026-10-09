@@ -10,7 +10,7 @@ import seaborn as sns
 import pandas as pd
 from IPython.display import display, HTML
 from ..data.computers import compute_auditory_performance_summary
-from ..stimuli.tones import TONE_FREQUENCY_NAMES, TONE_FREQUENCIES
+from ..stimuli.tones import tone_pulse_freq_names, tone_pulse_frequencies
 from ..utils.validators import validate_key
 
 
@@ -53,27 +53,27 @@ def get_auditory_performance_summary(key, stim, exp, pulse_freq='all'):
     
     if pulse_freq == 'all':
         display(HTML(
-            f'<b><h4>{TONE_FREQUENCY_NAMES[100]}</b> '
+            f'<b><h4>{tone_pulse_freq_names[100]}</b> '
             f'(<i>tone_pulse_freq = 100 Hz</i>)</h4>'
         ))
         display(pulse100_df)
     
         display(HTML(
-            f'<b><h4>{TONE_FREQUENCY_NAMES[0]}</b> '
+            f'<b><h4>{tone_pulse_freq_names[0]}</b> '
             f'(<i>tone_pulse_freq = 0 Hz</i>)</h4>'
         ))
         display(pulse0_df)
 
     elif pulse_freq == 0:
         display(HTML(
-            f'<b><h4>{TONE_FREQUENCY_NAMES[0]}</b> '
+            f'<b><h4>{tone_pulse_freq_names[0]}</b> '
             f'(<i>tone_pulse_freq = 0 Hz</i>)</h4>'
         ))
         display(pulse0_df)
     
     elif pulse_freq == 100:
         display(HTML(
-            f'<b><h4>{TONE_FREQUENCY_NAMES[100]}</b> '
+            f'<b><h4>{tone_pulse_freq_names[100]}</b> '
             f'(<i>tone_pulse_freq = 100 Hz</i>)</h4>'
         ))
         display(pulse100_df)
@@ -135,13 +135,13 @@ def plot_auditory_performance_per_frequency(key, stim, exp, criterion=0.65):
     )
     
     # LINE PLOT - Performance across sessions by tone type
-    for freq in TONE_FREQUENCIES:
+    for freq in tone_pulse_frequencies:
         df_sub = df_all[df_all['tone_pulse_freq'] == freq]
         axes[0].plot(
             df_sub['session_idx'],
             df_sub['performance'],
             marker='o',
-            label=TONE_FREQUENCY_NAMES[freq]
+            label=tone_pulse_freq_names[freq]
         )
 
     axes[0].set_title(
@@ -187,7 +187,7 @@ def plot_auditory_performance_per_frequency(key, stim, exp, criterion=0.65):
     axes[1].set_xticks([0, 1])
     axes[1].tick_params(axis='both', labelsize=16)
     axes[1].set_xticklabels(
-        [TONE_FREQUENCY_NAMES[0], TONE_FREQUENCY_NAMES[100]], 
+        [tone_pulse_freq_names[0], tone_pulse_freq_names[100]], 
         fontsize=16
     )
     axes[1].set_title('Mean auditory performance (±95% CI)', fontsize=18)

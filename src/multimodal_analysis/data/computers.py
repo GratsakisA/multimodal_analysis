@@ -1,4 +1,3 @@
-# src/repository_name/data/computers.py
 """
 Data computation functions for analysis.
 
@@ -11,10 +10,10 @@ import numpy as np
 from ..utils.validators import get_difficulties
 from ..utils.queries import fetch_sessions
 from ..stimuli.tones import (
-    TONE_FREQUENCIES, 
-    TONE_FREQUENCY_NAMES,
-    AUDITORY_TRIAL_CRITERIA,
-    MULTIMODAL_AUDITORY_CRITERIA
+    tone_pulse_frequencies, 
+    tone_pulse_freq_names,
+    auditory_trial_criteria,
+    multimodal_auditory_criteria
 )
 
 
@@ -109,9 +108,9 @@ def compute_auditory_performance_summary(key, stim, exp):
         )
         auditory_trials = auditory_trials[auditory_trials['obj_mag'] == 0]
     
-        # Separate by tone frequency using TONE_FREQUENCIES
-        continuous_tone_freq = TONE_FREQUENCIES[0]  # 0 Hz
-        pulsed_tone_freq = TONE_FREQUENCIES[1]      # 100 Hz
+        # Separate by tone frequency using tone_pulse_frequencies
+        continuous_tone_freq = tone_pulse_frequencies[0]  # 0 Hz
+        pulsed_tone_freq = tone_pulse_frequencies[1]      # 100 Hz
         
         pulse0 = auditory_trials[
             auditory_trials['tone_pulse_freq'] == continuous_tone_freq
@@ -148,7 +147,7 @@ def compute_auditory_performance_summary(key, stim, exp):
                 'abort': abort,
                 'n_trials': len(df_trials),
                 'tone_pulse_freq': freq,
-                'tone_type': TONE_FREQUENCY_NAMES[freq]  # Human-readable name
+                'tone_type': tone_pulse_freq_names[freq]  # Human-readable name
             })
 
     pulse0_df = pd.DataFrame(rows_pulse0)
