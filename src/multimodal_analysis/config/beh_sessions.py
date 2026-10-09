@@ -43,10 +43,22 @@ def add_behavior_sessions(animal_id, task_type, sessions):
 
     _save_sessions(data)
 
-def get_behavior_sessions(animal_id, task_type=None):
-    """Get behavioral sessions for an animal and task type."""
+def get_behavior_sessions(animal_id=None, task_type=None):
+    """Get behavioral sessions filtered by animal and task type."""
     data = _load_sessions()
 
+    # All animals
+    if animal_id is None:
+        if task_type is None:
+            return data
+
+        return {
+            animal: animal_data.get(task_type, [])
+            for animal, animal_data in data.items()
+            if task_type in animal_data
+        }
+
+    # Specific animal
     animal_id = str(animal_id)
     animal_data = data.get(animal_id, {})
 
