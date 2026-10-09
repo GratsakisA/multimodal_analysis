@@ -8,7 +8,7 @@ organized by modality (visual, auditory, multimodal).
 import pandas as pd
 from ..utils.validators import validate_key, get_difficulties
 from ..utils.queries import fetch_sessions
-from ..stimuli.objects import DEFAULT_OBJECT_IDS
+from ..stimuli.objects import default_object_ids
 from .processors import process_visual_object, process_multimodal_object
 
 
@@ -54,7 +54,7 @@ def fetch_visual_data(key, stim, exp):
     if difficulties is None:
         return {}
     
-    object_ids = key.get('object_ids', DEFAULT_OBJECT_IDS)
+    object_ids = key.get('object_ids', default_object_ids)
     excluded_sessions = key.get('excluded_sessions', set())
     
     sessions = fetch_sessions(
@@ -115,7 +115,7 @@ def fetch_multimodal_data(key, stim, exp):
     if difficulties is None:
         return {}
 
-    object_ids = key.get('object_ids', DEFAULT_OBJECT_IDS)
+    object_ids = key.get('object_ids', default_object_ids)
     excluded_sessions = key.get('excluded_sessions', set())
 
     sessions = fetch_sessions(

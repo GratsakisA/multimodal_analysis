@@ -1,4 +1,3 @@
-# src/repository_name/data/processors.py
 """
 Low-level data processing functions.
 
@@ -8,8 +7,8 @@ including filtering, aggregating, and computing statistics on trials.
 
 import pandas as pd
 import numpy as np
-from ..stimuli.objects import OBJECT_ALIASES
-from ..stimuli.tones import AUDITORY_TRIAL_CRITERIA, MULTIMODAL_AUDITORY_CRITERIA
+from ..stimuli.objects import object_aliases
+from ..stimuli.tones import auditory_trial_criteria, multimodal_auditory_criteria 
 
 
 def process_visual_object(animal_id, obj_id, sessions, difficulties, 
@@ -17,8 +16,7 @@ def process_visual_object(animal_id, obj_id, sessions, difficulties,
     """Process visual trials for a specific object across sessions.
     
     Fetches all visual trials (tone_volume=0) for a given object and computes
-    performance metrics per session. Visual trials are defined as auditory
-    trials with NO visual component (obj_mag == 0 is auditory-only).
+    performance metrics per session.
     
     Args:
         animal_id (str): Animal identifier.
@@ -30,27 +28,12 @@ def process_visual_object(animal_id, obj_id, sessions, difficulties,
         exp: DataJoint experiments schema.
         
     Returns:
-        pd.DataFrame: DataFrame with columns:
-            - animal_id: Animal identifier
-            - session: Session number
-            - date: Session date
-            - session_trials: Total trials in session
-            - valid_obj_trials: Valid trials for this object
-            - performance: Reward / (Reward + Punish)
-            - reward: Number of reward trials
-            - punish: Number of punish trials
-            - abort: Number of abort trials
-            
-    Example:
-        >>> from db import get_schemas
-        >>> schemas = get_schemas()
-        >>> exp = schemas['exp']
-        >>> stim = schemas['stim']
-        >>> df = process_visual_object('mouse_1', 211, sessions, [1, 2], {}, stim, exp)
+        pd.DataFrame: DataFrame with columns for animal_id, session, date, etc.
     """
     rows = []
     
     difficulty_filter = [{'difficulty': d} for d in difficulties]
+    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
 
     for session in sessions:
         
@@ -64,41 +47,39 @@ def process_visual_object(animal_id, obj_id, sessions, difficulties,
         ).strftime('%Y-%m-%d')
         
         # Handle object aliases
-        obj_ids = OBJECT_ALIASES.get(obj_id, [obj_id])
+        obj_ids = object_aliases.get(obj_id, [obj_id])
         obj_query = ' OR '.join([f'obj_id={o}' for o in obj_ids])
         
-        # Fetch visual trials (tone_volume = 0)
-        # See AUDITORY_TRIAL_CRITERIA for criteria definition
-        visual_trials = pd.DataFrame(
-            (
-                stim.StimCondition.Trial()
-                * stim.Tones
-                * exp.Trial
-                * exp.Condition.MatchPort
-                * stim.Panda.Object
-                & key_session
-                & obj_query
-                & difficulty_filter
-                & 'tone_volume=0'
-            ).fetch(as_dict=True)
-        )
+        # Fetch visual trials with state in one query
+        visual_trials = (
+            stim.StimCondition.Trial
+            * (stim.Panda.Object).proj('obj_mag')
+            * exp.Trial.StateOnset
+            * difficulty
+            * (stim.Tones).proj('tone_volume')
+            & key_session
+            & obj_query
+            & difficulty_filter
+            & 'tone_volume=0'
+            & 'state in ("Reward", "Punish", "Abort")'
+        ).fetch(format='frame').reset_index()
         
         if visual_trials.empty:
             continue
         
-        # Get trial states
-        visual_keys = visual_trials.to_dict('records')
-        state_visual = pd.DataFrame(
-            (exp.Trial.StateOnset & key_session & visual_keys).fetch(
-                'state', 
-                as_dict=True
-            )
+        visual_trials['obj_mag'] = pd.to_numeric(
+            visual_trials['obj_mag'], 
+            errors='coerce'
         )
+        visual_trials = visual_trials[visual_trials['obj_mag'] > 0]
+        
+        if visual_trials.empty:
+            continue
         
         total_trials = len(exp.Trial & key_session)
         
-        rew = (state_visual['state'] == 'Reward').sum()
-        pun = (state_visual['state'] == 'Punish').sum()
+        rew = (visual_trials['state'] == 'Reward').sum()
+        pun = (visual_trials['state'] == 'Punish').sum()
         
         valid = rew + pun
         performance = round(rew / valid, 2) if valid else 0
@@ -112,7 +93,7 @@ def process_visual_object(animal_id, obj_id, sessions, difficulties,
             'performance': performance,
             'reward': rew,
             'punish': pun,
-            'abort': (state_visual['state'] == 'Abort').sum()
+            'abort': (visual_trials['state'] == 'Abort').sum()
         })
     
     return pd.DataFrame(rows)
@@ -123,10 +104,7 @@ def process_multimodal_object(animal_id, obj_id, sessions, difficulties,
     """Process multimodal trials for a specific object across sessions.
     
     Fetches all multimodal trials (tone_volume > 0, obj_mag > 0) for a given
-    object and computes performance metrics per session. Multimodal trials
-    contain both auditory and visual stimulus components.
-    
-    See MULTIMODAL_AUDITORY_CRITERIA in stimuli.tones for criteria definition.
+    object and computes performance metrics per session.
     
     Args:
         animal_id (str): Animal identifier.
@@ -138,20 +116,7 @@ def process_multimodal_object(animal_id, obj_id, sessions, difficulties,
         exp: DataJoint experiments schema.
         
     Returns:
-        pd.DataFrame: DataFrame with columns:
-            - animal_id: Animal identifier
-            - session: Session number
-            - date: Session date
-            - session_trials: Total trials in session
-            - valid_obj_trials: Valid trials for this object
-            - percentage: Percentage of session trials
-            - performance: Reward / (Reward + Punish)
-            - reward: Number of reward trials
-            - punish: Number of punish trials
-            - abort: Number of abort trials
-            
-    Example:
-        >>> df = process_multimodal_object('mouse_1', 211, sessions, [1, 2], {}, stim, exp)
+        pd.DataFrame: DataFrame with columns for animal_id, session, date, etc.
     """
     rows = []
 
@@ -173,22 +138,19 @@ def process_multimodal_object(animal_id, obj_id, sessions, difficulties,
         obj_ids = OBJECT_ALIASES.get(obj_id, [obj_id])
         obj_query = ' OR '.join([f'obj_id={o}' for o in obj_ids])
 
-        # Fetch multimodal trials (tone_volume > 0 AND obj_mag > 0)
-        # Criteria: both auditory and visual stimuli present
-        multi_trials = pd.DataFrame(
-            (
-                stim.StimCondition.Trial
-                * stim.Panda.Object.proj('obj_mag')
-                * exp.Trial.StateOnset
-                * difficulty
-                * stim.Tones.proj('tone_volume')
-                & key_session
-                & obj_query
-                & difficulty_filter
-                & 'tone_volume > 0'
-                & 'state in ("Reward", "Punish", "Abort")'
-            ).fetch(as_dict=True)
-        )
+        # Fetch multimodal trials with state in one query
+        multi_trials = (
+            stim.StimCondition.Trial
+            * stim.Panda.Object.proj('obj_mag')
+            * exp.Trial.StateOnset
+            * difficulty
+            * stim.Tones.proj('tone_volume')
+            & key_session
+            & obj_query
+            & difficulty_filter
+            & 'tone_volume > 0'
+            & 'state in ("Reward", "Punish", "Abort")'
+        ).fetch(format='frame').reset_index()
 
         if multi_trials.empty:
             continue
