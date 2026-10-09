@@ -2,3 +2,6 @@ __pycache__/
 .ipynb_checkpoints/
 MyControl_behavior.ipynb
 performance_across_sessions.ipynb
+
+# Python packaging
+*.egg-info/
