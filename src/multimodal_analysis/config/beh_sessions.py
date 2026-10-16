@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 SESSIONS_PATH = (
     Path(__file__).resolve().parents[3]
     / "config"

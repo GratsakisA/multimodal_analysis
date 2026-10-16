@@ -6,11 +6,9 @@ across different stimulus conditions and modalities.
 """
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-from IPython.display import display
-from ..utils.validators import validate_key, get_difficulties
-from ..utils.queries import fetch_sessions
+import pandas as pd
+
 
 def get_condition_distribution_data(key, stim, exp, incl_aborts=False):
     """Fetch trial distribution data across conditions.

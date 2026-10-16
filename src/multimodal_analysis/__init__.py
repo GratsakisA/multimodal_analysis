@@ -14,18 +14,18 @@ Modules:
 Quick Start:
     >>> from repository_name import get_schemas
     >>> from repository_name.plots import plot_visual_performance_per_object
-    >>> 
+    >>>
     >>> schemas = get_schemas()
     >>> exp = schemas['exp']
     >>> stim = schemas['stim']
-    >>> 
+    >>>
     >>> key = {
     ...     'animal_id': 'mouse_1',
     ...     'sessions': (1, 20),
     ...     'difficulties': [1, 2, 3],
     ...     'excluded_sessions': set()
     ... }
-    >>> 
+    >>>
     >>> plot_visual_performance_per_object(key, stim, exp)
 """
 
@@ -36,133 +36,118 @@ __license__ = "MIT"
 
 
 # Database imports
-from .db.config import get_schemas, SCHEMATA
-
-# Stimulus configuration imports
-from .stimuli.objects import default_object_ids, object_aliases
-from .stimuli.tones import (
-    tone_pulse_frequencies,
-    tone_pulse_freq_names,
-    auditory_trial_criteria,
-    multimodal_auditory_criteria
-)
-
-# Utility imports
-from .utils.validators import validate_key, get_difficulties
-from .utils.queries import fetch_sessions
-
-# Data Processing Imports
-from .data.processors import ( 
-    process_visual_object, 
-    process_multimodal_object,
-)
-from .data.fetchers import (
-    fetch_visual_data, 
-    fetch_multimodal_data,
-)
 from .data.computers import (
     compute_auditory_performance_summary,
-    compute_modality_performance
+    compute_modality_performance,
 )
+from .data.fetchers import (
+    fetch_multimodal_data,
+    fetch_visual_data,
+)
+
+# Data Processing Imports
+from .data.processors import (
+    process_multimodal_object,
+    process_visual_object,
+)
+from .db.config import SCHEMATA, get_schemas
+from .plots.auditory_trials import (
+    get_auditory_performance_summary,
+    plot_auditory_performance_per_frequency,
+)
+from .plots.distribution import (
+    get_condition_distribution_data,
+    get_object_distribution_trials,
+    # 'plot_object_distribution_object_trials',
+    # 'get_object_distribution_data',
+    plot_condition_distribution_percentage,
+    plot_condition_trial_distribution,
+)
+from .plots.modality import (
+    get_linePlot_per_modality_across_sessions,
+    get_scatter_plot_modalities,
+)
+from .plots.multimodal_trials import (
+    get_multimodal_performance_summary,
+    plot_multimodal_performance_per_object,
+)
+from .plots.responses import (
+    calculate_response_type,
+    plot_response_counts,
+)
+from .plots.tables import highlight_object_trials_distribution_table
 
 # Plotting imports
 from .plots.visual_trials import (
     get_visual_performance_summary,
-    plot_visual_performance_per_object
-)
-from .plots.auditory_trials import (
-    get_auditory_performance_summary,
-    plot_auditory_performance_per_frequency
-)
-from .plots.multimodal_trials import (
-    get_multimodal_performance_summary,
-    plot_multimodal_performance_per_object
-)
-from .plots.distribution import (
-    get_condition_distribution_data,
-    plot_condition_trial_distribution,
-    plot_condition_distribution_percentage,
-    get_object_distribution_trials,
-    # 'plot_object_distribution_object_trials',
-    # 'get_object_distribution_data',
+    plot_visual_performance_per_object,
 )
 
-from .plots.tables import highlight_object_trials_distribution_table
+# Stimulus configuration imports
+from .stimuli.objects import default_object_ids, object_aliases
+from .stimuli.tones import (
+    auditory_trial_criteria,
+    multimodal_auditory_criteria,
+    tone_pulse_freq_names,
+    tone_pulse_frequencies,
+)
+from .utils.queries import fetch_sessions
 
-from .plots.modality import (
-    get_linePlot_per_modality_across_sessions,
-    get_scatter_plot_modalities
-)
-from .plots.responses import (
-    calculate_response_type,
-    plot_response_counts
-)
+# Utility imports
+from .utils.validators import get_difficulties, validate_key
 
 # Public API
 __all__ = [
     # Version and metadata
-    '__version__',
-    '__author__',
-    '__email__',
-    '__license__',
-    
+    "__version__",
+    "__author__",
+    "__email__",
+    "__license__",
     # Database
-    'get_schemas',
-    'SCHEMATA',
-    
+    "get_schemas",
+    "SCHEMATA",
     # Stimuli
-    'default_object_ids',
-    'object_aliases',
-    'tone_pulse_frequencies',
-    'tone_pulse_freq_names',
-    'auditory_trial_criteria',
-    'multimodal_auditory_criteria',
-    
+    "default_object_ids",
+    "object_aliases",
+    "tone_pulse_frequencies",
+    "tone_pulse_freq_names",
+    "auditory_trial_criteria",
+    "multimodal_auditory_criteria",
     # Utils
-    'validate_key',
-    'get_difficulties',
-    'fetch_sessions',
-    
+    "validate_key",
+    "get_difficulties",
+    "fetch_sessions",
     # Data - Processors
-    'process_visual_object',
-    'process_multimodal_object',
-    
+    "process_visual_object",
+    "process_multimodal_object",
     # Data - Fetchers
-    'fetch_visual_data',
-    'fetch_multimodal_data',
-    
+    "fetch_visual_data",
+    "fetch_multimodal_data",
     # Data - Computers
-    'compute_auditory_performance_summary',
-    'compute_modality_performance',
-    
+    "compute_auditory_performance_summary",
+    "compute_modality_performance",
     # Plots - Visual trials
-    'get_visual_performance_summary',
-    'plot_visual_performance_per_object',
-    
+    "get_visual_performance_summary",
+    "plot_visual_performance_per_object",
     # Plots - Auditory trials
-    'get_auditory_performance_summary',
-    'plot_auditory_performance_per_frequency',
-    
+    "get_auditory_performance_summary",
+    "plot_auditory_performance_per_frequency",
     # Plots - Multimodal trials
-    'get_multimodal_performance_summary',
-    'plot_multimodal_performance_per_object',
-    
+    "get_multimodal_performance_summary",
+    "plot_multimodal_performance_per_object",
     # Plots - Distribution
-    'get_condition_distribution_data',
-    'plot_condition_trial_distribution',
-    'plot_condition_distribution_percentage',
-    'get_object_distribution_trials',
+    "get_condition_distribution_data",
+    "plot_condition_trial_distribution",
+    "plot_condition_distribution_percentage",
+    "get_object_distribution_trials",
     # 'plot_object_distribution_object_trials',
     # 'get_object_distribution_data',
-
     # Plots - Tables
-    'highlight_object_trials_distribution_table',
-    
+    "highlight_object_trials_distribution_table",
     # Plots - Modality
-    'get_linePlot_per_modality_across_sessions',
-    'get_scatter_plot_modalities',
-    
+    "get_linePlot_per_modality_across_sessions",
+    "get_scatter_plot_modalities",
     # Plots - Responses
-    'calculate_response_type',
-    'plot_response_counts',
+    "calculate_response_type",
+    "plot_response_counts",
 ]

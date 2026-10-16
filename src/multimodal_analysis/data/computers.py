@@ -5,16 +5,13 @@ This module contains functions that compute statistics and metrics
 from processed trial data, with integration of stimulus configurations.
 """
 
-import pandas as pd
 import numpy as np
-from ..utils.validators import get_difficulties
-from ..utils.queries import fetch_sessions
-from ..stimuli.tones import (
-    tone_pulse_frequencies, 
-    tone_pulse_freq_names,
-    auditory_trial_criteria,
-    multimodal_auditory_criteria
+import pandas as pd
+
+from multimodal_analysis.stimuli.tones import (
+    tone_pulse_frequencies,
 )
+from multimodal_analysis.utils.validators import get_difficulties
 
 
 def compute_auditory_performance_summary(key, stim, exp):
@@ -58,8 +55,8 @@ def compute_auditory_performance_summary(key, stim, exp):
     """
     animal_id = key['animal_id']
     from_session, to_session = key['sessions']
-    
     difficulties = get_difficulties(key)
+    
     if difficulties is None:
         return pd.DataFrame(), pd.DataFrame()
     
@@ -131,6 +128,8 @@ def compute_auditory_performance_summary(key, stim, exp):
             reward = (df_trials['state'] == 'Reward').sum()
             punish = (df_trials['state'] == 'Punish').sum()
             abort = (df_trials['state'] == 'Abort').sum()
+
+            valid_trials = reward + punish
     
             perf = (
                 round(reward / (reward + punish), 2)
@@ -144,10 +143,11 @@ def compute_auditory_performance_summary(key, stim, exp):
                 'performance': perf,
                 'reward': reward,
                 'punish': punish,
+                'valid_trials': valid_trials,
                 'abort': abort,
                 'n_trials': len(df_trials),
                 'tone_pulse_freq': freq,
-                'tone_type': tone_pulse_freq_names[freq]  # Human-readable name
+                # 'tone_type': tone_pulse_freq_names[freq]  # Human-readable name
             })
 
     pulse0_df = pd.DataFrame(rows_pulse0)
@@ -156,51 +156,41 @@ def compute_auditory_performance_summary(key, stim, exp):
     return pulse0_df, pulse100_df
 
 
-def compute_modality_performance(animal_id, from_session, to_session, stim, 
-                                 exp, excluded_sessions, difficulties):
+def compute_modality_performance(key, stim, exp):
     """Compute performance across different stimulus modalities.
-    
-    Compares performance in auditory, visual, and multimodal conditions,
-    including difficult variants. Integrates stimulus definitions from
-    stimuli.tones and stimuli.objects modules.
-    
+
     Args:
-        animal_id (str): Animal identifier.
-        from_session (int): Start session number (inclusive).
-        to_session (int): End session number (inclusive).
+        key (dict): Analysis configuration containing:
+            - animal_id (int): Animal identifier.
+            - sessions (tuple): Start and end session numbers (inclusive).
+            - difficulties (list): Difficulty levels to include.
+            - excluded_sessions (list or set): Sessions to exclude.
         stim: DataJoint stimuli schema.
         exp: DataJoint experiments schema.
-        excluded_sessions (list or set): Session numbers to exclude.
-        difficulties (list): List of difficulty levels to include.
-        
+
     Returns:
-        pd.DataFrame: DataFrame with columns:
-            - session: Session number
-            - auditory_perf: Auditory performance (NaN if no trials)
-            - visual_perf: Visual performance (NaN if no trials)
-            - multi_perf: Multimodal performance (NaN if no trials)
-            - multi_difficult_perf: Multimodal difficult performance
-            - visual_difficult_perf: Visual difficult performance
-            
-    Example:
-        >>> df = compute_modality_performance(
-        ...     'mouse_1', 1, 20, stim, exp, set(), [1, 2]
-        ... )
-        >>> print(df)
+        pd.DataFrame or None: Performance per session and modality,
+            or None if difficulties is None.
     """
-    difficulties = get_difficulties({'difficulties': difficulties})
+    animal_id = key["animal_id"]
+    from_s, to_s = key["sessions"]
+    excluded_sessions = key["excluded_sessions"]
+    difficulties = key["difficulties"]
+
     if difficulties is None:
-        return pd.DataFrame()
+        return None
 
-    difficulty_filter = [{'difficulty': d} for d in difficulties]
-    difficulty = (exp.Condition.MatchPort() * exp.Trial()).proj('difficulty')
+    difficulty_filter = [{"difficulty": d} for d in difficulties]
+    difficulty = (
+        exp.Condition.MatchPort() * exp.Trial()
+    ).proj("difficulty")
 
-    restr = exp.Session() & {'animal_id': animal_id}
-    valid_sessions = (restr - exp.Session.Excluded).fetch('session')
+    restr = exp.Session() & {"animal_id": animal_id}
+    valid_sessions = (restr - exp.Session.Excluded).fetch("session")
 
     perf_per_condition = []
 
-    for session in range(from_session, to_session + 1):
+    for session in range(from_s, to_s + 1):
 
         if session not in valid_sessions or session in excluded_sessions:
             continue

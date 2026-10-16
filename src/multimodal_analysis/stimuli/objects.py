@@ -6,7 +6,6 @@ identifiers used throughout the project for visual and multimodal trials.
 """
 
 # Object configuration
-
 default_object_ids = [211, 212, 213, 214, 215, 216, 217, 218, 219]
 """List of standard visual object IDs used in experiments."""
 

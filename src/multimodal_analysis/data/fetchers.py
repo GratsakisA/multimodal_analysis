@@ -5,11 +5,13 @@ This module contains high-level functions for fetching processed data
 organized by modality (visual, auditory, multimodal).
 """
 
-import pandas as pd
-from ..utils.validators import validate_key, get_difficulties
-from ..utils.queries import fetch_sessions
-from ..stimuli.objects import default_object_ids
-from .processors import process_visual_object, process_multimodal_object
+from multimodal_analysis.data.processors import (
+    process_multimodal_object,
+    process_visual_object,
+)
+from multimodal_analysis.stimuli.objects import default_object_ids
+from multimodal_analysis.utils.queries import fetch_sessions
+from multimodal_analysis.utils.validators import get_difficulties, validate_key
 
 
 def fetch_visual_data(key, stim, exp):

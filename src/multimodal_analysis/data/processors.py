@@ -6,9 +6,8 @@ including filtering, aggregating, and computing statistics on trials.
 """
 
 import pandas as pd
-import numpy as np
-from ..stimuli.objects import object_aliases
-from ..stimuli.tones import auditory_trial_criteria, multimodal_auditory_criteria 
+
+from multimodal_analysis.stimuli.objects import object_aliases
 
 
 def process_visual_object(animal_id, obj_id, sessions, difficulties, 
@@ -83,17 +82,23 @@ def process_visual_object(animal_id, obj_id, sessions, difficulties,
         
         valid = rew + pun
         performance = round(rew / valid, 2) if valid else 0
+
+        percentage = (
+            round((valid / total_trials) * 100, 2)
+            if total_trials else 0
+        )
         
         rows.append({
             'animal_id': animal_id,
             'session': session,
             'date': session_date,
             'session_trials': total_trials,
+            'obj_perf': performance,
+            'obj_rew': rew,
+            'obj_pun': pun,
             'valid_obj_trials': valid,
-            'performance': performance,
-            'reward': rew,
-            'punish': pun,
-            'abort': (visual_trials['state'] == 'Abort').sum()
+            'obj_abrt': (visual_trials['state'] == 'Abort').sum(),
+            'obj_pct': percentage,
         })
     
     return pd.DataFrame(rows)
@@ -135,7 +140,7 @@ def process_multimodal_object(animal_id, obj_id, sessions, difficulties,
         ).strftime('%Y-%m-%d')
 
         # Handle object aliases
-        obj_ids = OBJECT_ALIASES.get(obj_id, [obj_id])
+        obj_ids = object_aliases.get(obj_id, [obj_id])
         obj_query = ' OR '.join([f'obj_id={o}' for o in obj_ids])
 
         # Fetch multimodal trials with state in one query
@@ -185,12 +190,12 @@ def process_multimodal_object(animal_id, obj_id, sessions, difficulties,
             'session': session,
             'date': session_date,
             'session_trials': total_trials,
+            'obj_perf': performance,
+            'obj_rew': rew,
+            'obj_pun': pun,
             'valid_obj_trials': valid,
-            'percentage': percentage,
-            'performance': performance,
-            'reward': rew,
-            'punish': pun,
-            'abort': abrt
+            'obj_abrt': abrt,
+            'obj_pct': percentage,
         })
 
     return pd.DataFrame(rows)

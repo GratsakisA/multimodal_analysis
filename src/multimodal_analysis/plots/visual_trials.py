@@ -6,12 +6,12 @@ including line plots across sessions and bar plots with confidence intervals.
 """
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
-import numpy as np
-from IPython.display import display, HTML
-from ..data.fetchers import fetch_visual_data
-from ..utils.validators import validate_key
+import seaborn as sns
+from IPython.display import HTML, display
+
+from multimodal_analysis.data.fetchers import fetch_visual_data
+from multimodal_analysis.utils.validators import validate_key
 
 
 def get_visual_performance_summary(key, stim, exp):
@@ -97,10 +97,10 @@ def plot_visual_performance_per_object(key, stim, exp, criterion=0.65):
                 df_copy[[
                     'session', 
                     'object', 
-                    'performance', 
-                    'reward', 
-                    'punish', 
-                    'abort', 
+                    'obj_perf', 
+                    'obj_rew', 
+                    'obj_pun', 
+                    'obj_abrt', 
                     'valid_obj_trials'
                 ]]
             )
@@ -128,7 +128,7 @@ def plot_visual_performance_per_object(key, stim, exp, criterion=0.65):
     sns.lineplot(
         data=row_data, 
         x='session_idx', 
-        y='performance', 
+        y='obj_perf', 
         hue='object', 
         marker='o', 
         ax=axes[0]
@@ -166,14 +166,14 @@ def plot_visual_performance_per_object(key, stim, exp, criterion=0.65):
     sns.barplot(
         data=row_data,
         x='object',
-        y='performance',
+        y='obj_perf',
         hue='object',
         errorbar=('ci', 95),
         ax=axes[1]
     )
     
     axes[1].set_title(
-        f'Mean visual performance per object (± 95% CI)', 
+        'Mean visual performance per object (± 95% CI)', 
         fontsize=18
     )
     axes[1].set_ylabel('Mean performance', fontsize=18)
