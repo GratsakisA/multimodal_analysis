@@ -84,33 +84,25 @@ print("total_sessions:", total_sessions)
 The function returns the result described by its implementation/docstring. See the function definition for details.
 
 
-### `get_linePlot_per_modality_across_sessions(animal_id, from_session, to_session, stim, exp, excluded_sessions, difficulties, criterion=0.65)`
+### `get_linePlot_per_modality_across_sessions(key, stim, exp, criterion=0.65)`
 
 **Defined in:** `src/multimodal_analysis/plots/modality.py`
 
 **Purpose:** Plot performance across sessions for each modality.
 
-Creates a line plot showing performance trajectory for auditory, visual,
-multimodal, and difficult variants across sessions.
-
 Args:
-    animal_id (str): Animal identifier.
-    from_session (int): Start session number (inclusive).
-    to_session (int): End session number (inclusive).
+    key (dict): Analysis configuration containing:
+        - animal_id (int): Animal identifier.
+        - sessions (tuple): Start and end session numbers.
+        - difficulties (list): Difficulty levels to include.
+        - excluded_sessions (list or set): Sessions to exclude.
     stim: DataJoint stimuli schema.
     exp: DataJoint experiments schema.
-    excluded_sessions (list or set): Session numbers to exclude.
-    difficulties (int or list): Difficulty level(s) to include.
-    criterion (float, optional): Performance criterion line.
+    criterion (float, optional): Performance criterion.
         Defaults to 0.65 (65%).
-    
+
 Returns:
-    None: Displays plot using plt.show().
-    
-Example:
-    >>> get_linePlot_per_modality_across_sessions(
-    ...     'mouse_1', 1, 20, stim, exp, set(), [1, 2], criterion=0.65
-    ... )
+    None: Displays the plot.
 
 **Usage:**
 
@@ -130,31 +122,26 @@ get_linePlot_per_modality_across_sessions(key, stim, exp, criterion=0.65)
 The function returns the result described by its implementation/docstring. See the function definition for details.
 
 
-### `get_scatter_plot_modalities(animal_id, from_session, to_session, stim, exp, excluded_sessions, difficulties)`
+### `get_scatter_plot_modalities(key, stim, exp)`
 
 **Defined in:** `src/multimodal_analysis/plots/modality.py`
 
-**Purpose:** Plot scatter comparison of performance between modalities.
+**Purpose:** Plot performance comparisons across sensory modalities.
 
-Creates four scatter plots comparing performance between different
-modality pairs with diagonal reference lines.
+Creates four scatter plots comparing auditory, visual, and
+multimodal performance across sessions.
 
 Args:
-    animal_id (str): Animal identifier.
-    from_session (int): Start session number (inclusive).
-    to_session (int): End session number (inclusive).
+    key (dict): Analysis configuration containing:
+        - animal_id: Animal identifier.
+        - sessions: (start_session, end_session).
+        - difficulties: Difficulty levels to include.
+        - excluded_sessions: Sessions to exclude.
     stim: DataJoint stimuli schema.
     exp: DataJoint experiments schema.
-    excluded_sessions (list or set): Session numbers to exclude.
-    difficulties (int or list): Difficulty level(s) to include.
-    
+
 Returns:
-    None: Displays plot using plt.show().
-    
-Example:
-    >>> get_scatter_plot_modalities(
-    ...     'mouse_1', 1, 20, stim, exp, set(), [1, 2]
-    ... )
+    None: Displays the scatter plots.
 
 **Usage:**
 
