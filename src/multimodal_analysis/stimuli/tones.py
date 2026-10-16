@@ -6,7 +6,6 @@ used in auditory and multimodal trials.
 """
 
 # Tone pulse frequency configuration
-
 tone_pulse_frequencies = [0, 100]
 """List of tone pulse frequencies used in experiments.
 
@@ -22,12 +21,10 @@ tone_pulse_freq_names = {
 
 
 # Tone volume configuration 
-
 min_auditory_volume = 0
 """Minimum volume threshold that constitutes auditory stimulation."""
 
 # Auditory trials definitions
-
 auditory_trial_criteria = {
     'tone_volume': '> 0',
     'obj_mag': '== 0'

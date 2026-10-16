@@ -7,9 +7,8 @@ This module contains functions for visualizing trial outcomes
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
-from ..utils.validators import validate_key, get_difficulties
-from ..utils.queries import fetch_sessions
+
+from multimodal_analysis.utils.validators import get_difficulties
 
 
 def calculate_response_type(animal_id, from_session, to_session, stim, exp,

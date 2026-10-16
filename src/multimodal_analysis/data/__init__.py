@@ -4,18 +4,21 @@ Contains functions for processing trial data, fetching performance metrics,
 and computing statistics across different stimulus modalities.
 """
 
-from .processors import process_visual_object, process_multimodal_object
-from .fetchers import fetch_visual_data, fetch_multimodal_data
 from .computers import (
-    compute_auditory_performance_summary, 
-    compute_modality_performance
+    compute_auditory_performance_summary,
+    compute_modality_performance,
+)
+from .fetchers import fetch_multimodal_data, fetch_visual_data
+from .processors import (
+    process_multimodal_object,
+    process_visual_object,
 )
 
 __all__ = [
-    'process_visual_object',
-    'process_multimodal_object',
-    'fetch_visual_data',
-    'fetch_multimodal_data',
-    'compute_auditory_performance_summary',
-    'compute_modality_performance',
+    "compute_auditory_performance_summary",
+    "compute_modality_performance",
+    "fetch_multimodal_data",
+    "fetch_visual_data",
+    "process_multimodal_object",
+    "process_visual_object",
 ]

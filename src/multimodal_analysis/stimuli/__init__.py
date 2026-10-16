@@ -6,17 +6,17 @@ and their aliases.
 
 from .objects import default_object_ids, object_aliases
 from .tones import (
-    tone_pulse_frequencies, 
-    tone_pulse_freq_names,
     auditory_trial_criteria,
-    multimodal_auditory_criteria
+    multimodal_auditory_criteria,
+    tone_pulse_freq_names,
+    tone_pulse_frequencies,
 )
 
 __all__ = [
-    'default_object_ids',
-    'object_aliases',
-    'tone_pulse_frequencies',
-    'tone_pulse_freq_names',
     'auditory_trial_criteria',
+    'default_object_ids',
     'multimodal_auditory_criteria',
+    'object_aliases',
+    'tone_pulse_freq_names',
+    'tone_pulse_frequencies',
 ]

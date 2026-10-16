@@ -6,12 +6,16 @@ separated by tone frequency (continuous vs pulsed).
 """
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
-from IPython.display import display, HTML
-from ..data.computers import compute_auditory_performance_summary
-from ..stimuli.tones import tone_pulse_freq_names, tone_pulse_frequencies
-from ..utils.validators import validate_key
+import seaborn as sns
+from IPython.display import HTML, display
+
+from multimodal_analysis.data.computers import compute_auditory_performance_summary
+from multimodal_analysis.stimuli.tones import (
+    tone_pulse_freq_names,
+    tone_pulse_frequencies,
+)
+from multimodal_analysis.utils.validators import validate_key
 
 
 def get_auditory_performance_summary(key, stim, exp, pulse_freq='all'):
@@ -111,7 +115,7 @@ def plot_auditory_performance_per_frequency(key, stim, exp, criterion=0.65):
     validate_key(key)
     
     animal_id = key['animal_id']
-    from_s, to_s = key['sessions']
+    from_session, to_session = key['sessions']
     
     pulse0_df, pulse100_df = compute_auditory_performance_summary(key, stim, exp)
 
@@ -201,8 +205,8 @@ def plot_auditory_performance_per_frequency(key, stim, exp, criterion=0.65):
         axes[1].get_legend().remove()
 
     plt.suptitle(
-        f"Performance in unimodal $\\mathbf{{auditory}}$ trials by tone type "
-        f"(Animal {animal_id}, sessions: {from_s}-{to_s})",
+        f"Performance in unimodal $\\mathbf{{auditory}}$ trials by tone pulse frequency "
+        f"(Animal {animal_id}, sessions: {from_session}-{to_session})",
         fontsize=14
     )
     

@@ -4,11 +4,11 @@ Contains validation and database query helper functions used throughout
 the package.
 """
 
-from .validators import validate_key, get_difficulties
 from .queries import fetch_sessions
+from .validators import get_difficulties, validate_key
 
 __all__ = [
-    'validate_key',
-    'get_difficulties',
-    'fetch_sessions',
+    "fetch_sessions",
+    "get_difficulties",
+    "validate_key",
 ]

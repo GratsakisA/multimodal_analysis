@@ -6,12 +6,12 @@ where both auditory and visual stimuli are presented together.
 """
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
-import numpy as np
-from IPython.display import display, HTML
-from ..data.fetchers import fetch_multimodal_data
-from ..utils.validators import validate_key
+import seaborn as sns
+from IPython.display import HTML, display
+
+from multimodal_analysis.data.fetchers import fetch_multimodal_data
+from multimodal_analysis.utils.validators import validate_key
 
 
 def get_multimodal_performance_summary(key, stim, exp):
@@ -102,10 +102,10 @@ def plot_multimodal_performance_per_object(key, stim, exp, criterion=0.65):
                     [
                         'session',
                         'object',
-                        'performance',
-                        'reward',
-                        'punish',
-                        'abort',
+                        'obj_perf',
+                        'obj_rew',
+                        'obj_pun',
+                        'obj_abrt',
                         'valid_obj_trials'
                     ]
                 ]
@@ -148,7 +148,7 @@ def plot_multimodal_performance_per_object(key, stim, exp, criterion=0.65):
     sns.lineplot(
         data=df_full,
         x='session_idx',
-        y='performance',
+        y='obj_perf',
         hue='object',
         marker='o',
         ax=axes[0]
@@ -191,7 +191,7 @@ def plot_multimodal_performance_per_object(key, stim, exp, criterion=0.65):
     sns.barplot(
         data=row_data,
         x='object',
-        y='performance',
+        y='obj_perf',
         hue='object',
         errorbar=('ci', 95),
         ax=axes[1]
