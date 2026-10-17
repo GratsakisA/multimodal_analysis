@@ -11,7 +11,7 @@ import seaborn as sns
 from multimodal_analysis.data.computers import compute_modality_performance
 
 
-def get_linePlot_per_modality_across_sessions(
+def plot_modalities_across_sessions_line(
     key, stim, exp, criterion=0.65
 ):
     """Plot performance across sessions for each modality.
@@ -128,7 +128,7 @@ def get_linePlot_per_modality_across_sessions(
     plt.tight_layout()
     plt.show()
 
-def get_scatter_plot_modalities(key, stim, exp):
+def plot_modalities_across_sessions_scatter(key, stim, exp):
     """Plot performance comparisons across sensory modalities.
 
     Creates four scatter plots comparing auditory, visual, and

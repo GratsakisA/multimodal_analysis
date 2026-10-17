@@ -64,8 +64,8 @@ from .plots.distribution import (
     plot_condition_trial_distribution,
 )
 from .plots.modality import (
-    get_linePlot_per_modality_across_sessions,
-    get_scatter_plot_modalities,
+    plot_modalities_across_sessions_line,
+    plot_modalities_across_sessions_scatter,
 )
 from .plots.multimodal_trials import (
     get_multimodal_performance_summary,
@@ -81,6 +81,8 @@ from .plots.tables import highlight_object_trials_distribution_table
 from .plots.visual_trials import (
     get_visual_performance_summary,
     plot_visual_performance_per_object,
+    plot_modalities_across_animals_line,
+    plot_modalities_across_animals_scatter,
 )
 
 # Stimulus configuration imports
@@ -145,8 +147,10 @@ __all__ = [
     # Plots - Tables
     "highlight_object_trials_distribution_table",
     # Plots - Modality
-    "get_linePlot_per_modality_across_sessions",
-    "get_scatter_plot_modalities",
+    "plot_modalities_across_sessions_line",
+    "plot_modalities_across_sessions_scatter",
+    "plot_modalities_across_animals_scatter",
+    "plot_modalities_across_animals_line",
     # Plots - Responses
     "calculate_response_type",
     "plot_response_counts",
