@@ -16,8 +16,10 @@ from .distribution import (
     plot_condition_trial_distribution,
 )
 from .modality import (
-    get_linePlot_per_modality_across_sessions,
-    get_scatter_plot_modalities,
+    plot_modalities_across_sessions_line,
+    plot_modalities_across_sessions_scatter,
+    plot_modalities_across_animals_scatter,
+    plot_modalities_across_animals_line,
 )
 from .multimodal_trials import (
     get_multimodal_performance_summary,
@@ -37,10 +39,10 @@ __all__ = [
     'calculate_response_type',
     'get_auditory_performance_summary',
     'get_condition_distribution_data',
-    'get_linePlot_per_modality_across_sessions',
+    'plot_modalities_across_sessions_line',
     'get_multimodal_performance_summary',
     'get_object_distribution_trials',
-    'get_scatter_plot_modalities',
+    'plot_modalities_across_sessions_scatter',
     'get_visual_performance_summary',
     'highlight_object_trials_distribution_table',
     'plot_auditory_performance_per_frequency',
