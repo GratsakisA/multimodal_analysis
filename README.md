@@ -1,22 +1,27 @@
 # Multimodal Analysis
 
-⚠️ **Status:** Early development (not yet released)
+[![Latest Release](https://img.shields.io/github/v/release/GratsakisA/multimodal_analysis)](https://github.com/GratsakisA/multimodal_analysis/releases)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+
+**Status:** Early development. The initial release, `v0.1.0`, is available.
 
 ## Overview
 
-`multimodal_analysis` processes and analyzes behavioral data from multimodal **audiovisual** experiments. It provides streamlined tools for comparing behavior across conditions, modalities, and subjects, with built-in visualization and database support.
+`multimodal_analysis` provides tools for processing and analyzing behavioral data from multimodal **audiovisual experiments**. It supports comparisons across experimental conditions, modalities, and animals, with visualization, database integration, and configurable behavioral-session management.
+
+The project is under active development, and its functionality and API may change between releases.
 
 ## Features
 
-* Behavioral data processing and analysis
-* Analysis across experimental modalities
-* Analysis across animals
-* Database integration with DataJoint
-* Configurable behavioral sessions
-* Data visualization
-* Reusable analysis functions and utilities
-* Jupyter notebook-based analysis workflows
-* Optional support for running EthoPy behavioral task configurations
+- Behavioral data processing and analysis
+- Analysis across experimental conditions and modalities
+- Analysis across animals
+- Database integration with DataJoint
+- Configurable behavioral sessions
+- Data visualization
+- Reusable analysis functions and utilities
+- Jupyter notebook-based analysis workflows
+- Optional support for EthoPy behavioral task configurations
 
 ## Repository Structure
 
@@ -24,26 +29,28 @@
 
 <!-- END REPOSITORY TREE -->
 
-## Get started using multimodal_analysis
+## Getting Started
 
-1. Clone the repository and move into the project directory:
+### Prerequisites
 
-   ```bash
-   git clone https://github.com/GratsakisA/multimodal_analysis.git
-   cd multimodal_analysis
-   ```
+- Python 3.11 or later
+- [uv](https://docs.astral.sh/uv/) for environment and dependency management
 
-2. Install the project and its core dependencies:
+### Installation
 
-   ```bash
-   uv sync
-   ```
+Clone the repository and install the project with its dependencies:
 
-   > This creates a project-specific virtual environment in `.venv` and installs the dependencies specified in `pyproject.toml` and `uv.lock`.
+```bash
+git clone https://github.com/GratsakisA/multimodal_analysis.git
+cd multimodal_analysis
+uv sync
+```
 
-### Optional: Install EthoPy task dependencies
+This creates a project-specific virtual environment in `.venv` and installs the dependencies specified in `pyproject.toml` and `uv.lock`.
 
-If you want to run the behavioral task configurations located in `task_configurations/`, install the optional `tasks` dependencies:
+### Optional: EthoPy Task Dependencies
+
+If you want to use the behavioral task configurations in `task_configurations/`, install the optional `tasks` dependencies:
 
 ```bash
 uv sync --extra tasks
@@ -51,11 +58,18 @@ uv sync --extra tasks
 
 This installs EthoPy and its required Python dependencies.
 
-> **Note:** The EthoPy plugin repository required by some task configurations is not currently installed automatically. Instructions for installing and configuring the required plugins will be added separately.
+> **Note:** The EthoPy plugin repository required by some task configurations is not installed automatically. Instructions for installing and configuring the required plugins will be provided separately.
 
-## How to Contribute
+## Releases
 
-This project is actively being developed.
+Released versions and their changelogs are available on the [GitHub Releases page](https://github.com/GratsakisA/multimodal_analysis/releases).
 
-* File issues for bugs or feature requests.
-* Pull requests are welcome. Please check with the maintainers before making larger changes.
+The project follows semantic versioning, with release versions managed by [Python Semantic Release](https://python-semantic-release.readthedocs.io/).
+
+## Contributing
+
+Contributions, bug reports, and feature requests are welcome.
+
+- Open an issue to report a bug or suggest an improvement.
+- Submit a pull request for proposed changes.
+- Please discuss substantial changes with the maintainers before starting work.
