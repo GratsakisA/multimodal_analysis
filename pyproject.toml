@@ -16,11 +16,7 @@ readme = "README.md"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 commit_parser = "conventional"
-branch = "version"
 allow_zero_version = true
-
-[tool.semantic_release.branches.version]
-match = "version"
 
 [tool.semantic_release.commit_parser_options]
 minor_tags = ["feat"]
