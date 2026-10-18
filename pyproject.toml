@@ -27,6 +27,10 @@ patch_tags = ["fix", "perf"]
 # parse_squash_commits = true
 # ignore_merge_commits = true
 
+# [tool.semantic_release.changelog.default_templates]
+# changelog_file = "CHANGELOG.md"
+# output_format = "md" 
+
 keywords = [
     "neuroscience", 
     "audiovisual", 
@@ -54,3 +58,8 @@ tasks = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[dependency-groups]
+dev = [
+    "python-semantic-release>=10.7.0",
+]
