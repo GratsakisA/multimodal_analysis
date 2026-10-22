@@ -81,8 +81,10 @@ from .plots.tables import highlight_object_trials_distribution_table
 from .plots.visual_trials import (
     get_visual_performance_summary,
     plot_visual_performance_per_object,
-    plot_modalities_across_animals_line,
+)
+from .plots.across_animals import (
     plot_modalities_across_animals_scatter,
+    # plot_modalities_across_animals_line,
 )
 
 # Stimulus configuration imports

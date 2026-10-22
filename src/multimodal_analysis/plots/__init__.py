@@ -18,8 +18,10 @@ from .distribution import (
 from .modality import (
     plot_modalities_across_sessions_line,
     plot_modalities_across_sessions_scatter,
+)
+from .across_animals import (
     plot_modalities_across_animals_scatter,
-    plot_modalities_across_animals_line,
+    # plot_modalities_across_animals_line,
 )
 from .multimodal_trials import (
     get_multimodal_performance_summary,
