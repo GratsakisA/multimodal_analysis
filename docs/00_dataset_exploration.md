@@ -73,6 +73,28 @@ print(key)
 The function returns the result described by its implementation/docstring. See the function definition for details.
 
 
+### `get_animal_ids()`
+
+**Defined in:** `src/multimodal_analysis/config/beh_sessions.py`
+
+**Purpose:** Return all animal IDs defined in the beh-session configuration.
+
+**Usage:**
+
+Use `get_animal_ids()` in the notebook to perform this operation.
+
+**Example:**
+
+```python
+# get all animal_ids defined in beh_sessions.json
+get_animal_ids()
+```
+
+**Output:**
+
+The function returns the result described by its implementation/docstring. See the function definition for details.
+
+
 ### `get_behavior_sessions(animal_id=None, task_type=None)`
 
 **Defined in:** `src/multimodal_analysis/config/beh_sessions.py`
@@ -160,7 +182,10 @@ exp, stim, beh, inter, rec, mice = get_schema_modules()
 from multimodal_analysis.config import (
     add_behavior_sessions,
     create_analysis_key,
+    get_animal_ids,
     get_behavior_sessions,
+    get_task_types,
+    plot_behavior_task_types,
     remove_behavior_sessions,
 )
 from multimodal_analysis.plots import (
@@ -169,6 +194,73 @@ from multimodal_analysis.plots import (
     plot_condition_distribution_percentage,
     plot_condition_trial_distribution,
 )
+```
+
+**Output:**
+
+The function returns the result described by its implementation/docstring. See the function definition for details.
+
+
+### `get_task_types(animal_id=None)`
+
+**Defined in:** `src/multimodal_analysis/config/beh_sessions.py`
+
+**Purpose:** Return unique task types.
+
+Retrieves task types names defined in the beh-session
+configuration file.
+
+Args:
+    animal_id (int or str, optional): Animal identifier used to
+        filter configurations. If ``None``, includes all animals.
+
+Returns:
+    list[str]: Alphabetically sorted, unique task_types configurations.
+        Returns an empty list if no configurations are defined.
+
+**Usage:**
+
+Use `get_task_types()` in the notebook to perform this operation.
+
+**Example:**
+
+```python
+# Get available behavioral task types from beh_sessions.json.
+# Parameters: animal_id (str | None)
+get_task_types(animal_id=None)
+```
+
+**Output:**
+
+The function returns the result described by its implementation/docstring. See the function definition for details.
+
+
+### `plot_behavior_task_types(show_counts=False)`
+
+**Defined in:** `src/multimodal_analysis/config/beh_sessions.py`
+
+**Purpose:** Plot which behavioral task types have been run for each animal.
+
+Args:
+    show_counts (bool, optional):
+        If True, display the number of sessions per task type.
+        If False, display task-type presence or absence.
+        Defaults to False.
+
+Returns:
+    tuple: Matplotlib figure and axes.
+
+**Usage:**
+
+Use `plot_behavior_task_types()` in the notebook to perform this operation.
+
+**Example:**
+
+```python
+# Plot behavioral task types across animals.
+# Parameter:
+# show_counts (bool): If True, display the number of sessions per task type.
+task_type_across_animals = plot_behavior_task_types(show_counts=True)
 ```
 
 **Output:**

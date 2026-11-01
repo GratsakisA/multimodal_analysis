@@ -84,7 +84,36 @@ print("total_sessions:", total_sessions)
 The function returns the result described by its implementation/docstring. See the function definition for details.
 
 
-### `get_linePlot_per_modality_across_sessions(key, stim, exp, criterion=0.65)`
+### `get_schema_modules()`
+
+**Defined in:** `src/multimodal_analysis/db/config.py`
+
+**Purpose:** Initialize and return all schemas as individual modules.
+
+**Usage:**
+
+Use `get_schema_modules()` in the notebook to perform this operation.
+
+**Example:**
+
+```python
+from multimodal_analysis.db import get_schema_modules
+
+exp, stim, beh, inter, rec, mice = get_schema_modules()
+
+from multimodal_analysis.config import create_analysis_key, get_behavior_sessions
+from multimodal_analysis.plots import (
+    plot_modalities_across_sessions_line,
+    plot_modalities_across_sessions_scatter,
+)
+```
+
+**Output:**
+
+The function returns the result described by its implementation/docstring. See the function definition for details.
+
+
+### `plot_modalities_across_sessions_line(key, stim, exp, criterion=0.65)`
 
 **Defined in:** `src/multimodal_analysis/plots/modality.py`
 
@@ -106,7 +135,7 @@ Returns:
 
 **Usage:**
 
-Use `get_linePlot_per_modality_across_sessions()` in the notebook to perform this operation.
+Use `plot_modalities_across_sessions_line()` in the notebook to perform this operation.
 
 **Example:**
 
@@ -114,7 +143,7 @@ Use `get_linePlot_per_modality_across_sessions()` in the notebook to perform thi
 # Plot performance across sessions for each modality
 # Parameters:
 # key (dict), stim (stimulus schema), exp (experiment schema), criterion (float)
-get_linePlot_per_modality_across_sessions(key, stim, exp, criterion=0.65)
+plot_modalities_across_sessions_line(key, stim, exp, criterion=0.65)
 ```
 
 **Output:**
@@ -122,7 +151,7 @@ get_linePlot_per_modality_across_sessions(key, stim, exp, criterion=0.65)
 The function returns the result described by its implementation/docstring. See the function definition for details.
 
 
-### `get_scatter_plot_modalities(key, stim, exp)`
+### `plot_modalities_across_sessions_scatter(key, stim, exp)`
 
 **Defined in:** `src/multimodal_analysis/plots/modality.py`
 
@@ -145,7 +174,7 @@ Returns:
 
 **Usage:**
 
-Use `get_scatter_plot_modalities()` in the notebook to perform this operation.
+Use `plot_modalities_across_sessions_scatter()` in the notebook to perform this operation.
 
 **Example:**
 
@@ -153,36 +182,7 @@ Use `get_scatter_plot_modalities()` in the notebook to perform this operation.
 # Plot performance comparisons across sensory modalities
 # Parameters:
 # key (dict), stim (stimulus schema), exp (experiment schema)
-get_scatter_plot_modalities(key, stim, exp)
-```
-
-**Output:**
-
-The function returns the result described by its implementation/docstring. See the function definition for details.
-
-
-### `get_schema_modules()`
-
-**Defined in:** `src/multimodal_analysis/db/config.py`
-
-**Purpose:** Initialize and return all schemas as individual modules.
-
-**Usage:**
-
-Use `get_schema_modules()` in the notebook to perform this operation.
-
-**Example:**
-
-```python
-from multimodal_analysis.db import get_schema_modules
-
-exp, stim, beh, inter, rec, mice = get_schema_modules()
-
-from multimodal_analysis.config import create_analysis_key, get_behavior_sessions
-from multimodal_analysis.plots import (
-    get_linePlot_per_modality_across_sessions,
-    get_scatter_plot_modalities,
-)
+plot_modalities_across_sessions_scatter(key, stim, exp)
 ```
 
 **Output:**
