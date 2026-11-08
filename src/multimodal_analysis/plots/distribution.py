@@ -387,6 +387,7 @@ def plot_condition_trial_distribution(key, stim, exp, incl_aborts=False):
     ax.set_xticklabels(sessions)
     ax.set_xlabel("Session", fontsize=12)
     ax.set_ylabel("Number of trials", fontsize=12)
+    ax.tick_params("x", rotation=80)
     ax.set_title(f"Animal {data['animal_id']}", fontsize=12)
 
     plt.grid(alpha=0.3)
