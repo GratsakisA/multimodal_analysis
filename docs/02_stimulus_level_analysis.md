@@ -105,7 +105,29 @@ The function returns the result described by its implementation/docstring. See t
 
 **Defined in:** `src/multimodal_analysis/config/beh_sessions.py`
 
-**Purpose:** Get behavioral sessions filtered by animal and task type.
+**Purpose:** Get behavioral sessions filtered by animal and task type(s).
+
+Args:
+    animal_id (int or str, optional): Animal identifier.
+        If None, retrieves sessions for all animals.
+    task_type (str or list[str], optional): Task type(s) to retrieve.
+        If None, retrieves all task types.
+
+Returns:
+    dict or list:
+        - If animal_id is None and task_type is None, returns the
+          complete session configuration.
+        - If animal_id is None and task_type is specified, returns
+          a dictionary mapping each animal ID to a combined,
+          sorted list of sessions.
+        - If animal_id is specified and task_type is None, returns
+          a dictionary mapping task types to session lists.
+        - If animal_id and task_type are specified, returns a
+          combined, sorted list of sessions.
+
+Raises:
+    TypeError: If task_type is neither a string, a list of strings,
+        nor None.
 
 **Usage:**
 
