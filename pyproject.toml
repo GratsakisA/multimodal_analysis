@@ -11,6 +11,12 @@ authors = [
 ]
 description = "Behavioral experiment analysis of multimodal tasks"
 readme = "README.md"
+dependencies = [
+    "ipykernel>=7.4.0",
+    "matplotlib>=3.11.2",
+    "numpy>=2.4.6",
+    "scipy>=1.17.1",
+]
 # license = {text="MIT"}
 
 [tool.semantic_release]
